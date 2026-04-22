@@ -4,683 +4,628 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>โปรไฟล์ — Advance Plus</title>
-  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
+    /* ═══ THEMES ═══ */
     :root,[data-theme="light"]{
       --bg:linear-gradient(150deg,#f0fdf4 0%,#dcfce7 25%,#bbf7d0 50%,#d1fae5 75%,#ecfdf5 100%);
-      --card:#fff;--txt:#14532d;--txt-md:#166534;--txt-dim:#4ade80;--txt-sub:#5a7a66;
-      --border:#86efac;--inp-bg:#f0fdf4;--g-md:#16a34a;--g-dk:#15803d;
-      --sec-div:#dcfce7;--shadow:0 4px 24px rgba(22,101,52,.10);
-      --red:#dc2626;--red-pale:#fef2f2;
-      --cover-from:#14532d;--cover-to:#22c55e;
+      --card:#fff;--card2:#f8fafc;--txt:#14532d;--txt-md:#166534;--txt-dim:#86efac;
+      --border:#86efac;--inp-bg:#f0fdf4;--g-md:#16a34a;--g-dk:#15803d;--g-lt:#22c55e;
+      --sec-div:#dcfce7;--shadow:0 4px 24px rgba(22,101,52,.10);--shadow-sm:0 2px 8px rgba(22,101,52,.08);
+      --red:#dc2626;--red-pale:#fef2f2;--orange:#ea580c;
+      --tag-bg:#f0fdf4;--tag-c:#15803d;--tag-bd:#86efac;
     }
     [data-theme="dark"]{
       --bg:linear-gradient(150deg,#1a3a28 0%,#1f4530 20%,#264d38 45%,#1f4530 70%,#1a3a28 100%);
-      --card:#234535;--txt:#ecfdf5;--txt-md:#bbf7d0;--txt-dim:#6ee7b7;--txt-sub:#9bbfaa;
-      --border:rgba(110,231,183,.35);--inp-bg:#1f4530;--g-md:#34d399;--g-dk:#4ade80;
-      --sec-div:rgba(110,231,183,.18);--shadow:0 4px 28px rgba(0,0,0,.3);
-      --red:#fca5a5;--red-pale:#3b1a1a;
-      --cover-from:#0d2b1c;--cover-to:#166534;
+      --card:#234535;--card2:#1a3a28;--txt:#ecfdf5;--txt-md:#bbf7d0;--txt-dim:#6ee7b7;
+      --border:rgba(110,231,183,.35);--inp-bg:#1f4530;--g-md:#34d399;--g-dk:#4ade80;--g-lt:#6ee7b7;
+      --sec-div:rgba(110,231,183,.18);--shadow:0 4px 28px rgba(0,0,0,.3);--shadow-sm:0 2px 8px rgba(0,0,0,.2);
+      --red:#fca5a5;--red-pale:#3b1a1a;--orange:#fdba74;
+      --tag-bg:rgba(74,222,128,.12);--tag-c:#4ade80;--tag-bd:rgba(74,222,128,.3);
     }
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
     body{font-family:'Kanit',sans-serif;background:var(--bg);background-attachment:fixed;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:0 0 4rem;color:var(--txt);transition:background .4s,color .3s;}
 
     /* ── TOPBAR ── */
-    .topbar{width:100%;background:rgba(0,0,0,.55);backdrop-filter:blur(12px);padding:.7rem 1.5rem;display:flex;align-items:center;gap:.8rem;position:sticky;top:0;z-index:100;border-bottom:1px solid rgba(255,255,255,.08);}
-    .topbar img{height:36px;width:auto;object-fit:contain;}
-    .topbar-title{font-size:.95rem;font-weight:700;color:#fff;flex:1;}
-    .nav-link{font-size:.78rem;font-weight:600;color:rgba(255,255,255,.75);text-decoration:none;padding:.35rem .75rem;border-radius:8px;border:1px solid rgba(255,255,255,.2);transition:all .2s;}
-    .nav-link:hover{background:rgba(255,255,255,.12);color:#fff;}
-    .btn-logout{font-size:.78rem;font-weight:600;color:#fca5a5;background:rgba(220,38,38,.15);border:1px solid rgba(220,38,38,.3);padding:.35rem .75rem;border-radius:8px;cursor:pointer;font-family:'Kanit',sans-serif;transition:all .2s;}
-    .btn-logout:hover{background:rgba(220,38,38,.3);color:#fff;}
+    .topbar{width:100%;background:rgba(0,0,0,.55);backdrop-filter:blur(14px);padding:.65rem 1.2rem;display:flex;align-items:center;gap:.7rem;position:sticky;top:0;z-index:100;border-bottom:1px solid rgba(255,255,255,.08);}
+    .topbar img{height:34px;width:auto;object-fit:contain;}
+    .topbar-title{font-size:.88rem;font-weight:700;color:#fff;flex:1;}
+    .nav-btn{font-size:.73rem;font-weight:600;padding:.3rem .75rem;border-radius:20px;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.85);background:rgba(255,255,255,.1);text-decoration:none;transition:all .2s;cursor:pointer;font-family:'Kanit',sans-serif;white-space:nowrap;}
+    .nav-btn:hover{background:rgba(255,255,255,.2);color:#fff;}
+    .nav-btn.danger{color:#fca5a5;background:rgba(220,38,38,.15);border-color:rgba(220,38,38,.3);}
+    .nav-btn.danger:hover{background:rgba(220,38,38,.3);color:#fff;}
 
-    .page-wrap{width:100%;max-width:560px;padding:0 1rem;}
+    .page-wrap{width:100%;max-width:580px;padding:1.6rem 1rem 0;}
 
-    /* ── COVER + HERO CARD ── */
+    /* ── HERO CARD (avatar + name) ── */
     .hero-card{
-      background:var(--card);border-radius:0 0 22px 22px;
-      box-shadow:var(--shadow);border:1px solid var(--sec-div);
-      border-top:none;overflow:visible;margin-bottom:1.2rem;
-      position:relative;
+      background:var(--card);border-radius:22px;box-shadow:var(--shadow);border:1px solid var(--sec-div);
+      padding:2rem 1.6rem 1.6rem;margin-bottom:1.2rem;text-align:center;
+      position:relative;overflow:hidden;transition:background .4s;
     }
-    .cover-strip{
-      height:96px;
-      background:linear-gradient(120deg,var(--cover-from),var(--cover-to));
-      border-radius:0 0 0 0;
-      position:relative;overflow:hidden;
-    }
-    .cover-strip::after{
-      content:'';position:absolute;inset:0;
-      background:repeating-linear-gradient(45deg,rgba(255,255,255,.04) 0px,rgba(255,255,255,.04) 2px,transparent 2px,transparent 18px);
-    }
-    .hero-body{padding:0 1.4rem 1.4rem;position:relative;}
+    .hero-bg-strip{position:absolute;top:0;left:0;right:0;height:80px;background:linear-gradient(135deg,var(--g-dk),var(--g-lt));opacity:.15;}
 
-    /* ── AVATAR UPLOAD ZONE ── */
-    .avatar-wrap{position:relative;display:inline-block;margin-top:-44px;margin-bottom:.6rem;}
+    /* Avatar upload area */
+    .avatar-wrap{position:relative;display:inline-block;cursor:pointer;margin-bottom:.9rem;}
     .avatar-ring{
-      width:88px;height:88px;border-radius:50%;
-      border:4px solid var(--card);
-      box-shadow:0 4px 16px rgba(22,101,52,.3);
-      overflow:hidden;position:relative;cursor:pointer;
-      transition:transform .2s;
-    }
-    .avatar-ring:hover{transform:scale(1.05);}
-    .avatar-img{width:100%;height:100%;object-fit:cover;display:none;}
-    .avatar-letter{
-      width:100%;height:100%;
+      width:90px;height:90px;border-radius:50%;
+      border:3.5px solid var(--g-lt);
+      box-shadow:0 0 0 4px rgba(34,197,94,.15),var(--shadow-sm);
+      overflow:hidden;position:relative;
       background:linear-gradient(135deg,#14532d,#22c55e);
-      display:grid;place-items:center;
-      font-size:2rem;font-weight:700;color:#fff;
-    }
-    .avatar-overlay{
-      position:absolute;inset:0;border-radius:50%;
-      background:rgba(0,0,0,.45);
       display:flex;align-items:center;justify-content:center;
-      opacity:0;transition:opacity .2s;pointer-events:none;
     }
-    .avatar-ring:hover .avatar-overlay{opacity:1;}
-    .avatar-overlay span{color:#fff;font-size:.65rem;font-weight:600;text-align:center;line-height:1.3;}
+    .avatar-ring img{width:100%;height:100%;object-fit:cover;}
+    .avatar-letter{font-size:2rem;font-weight:700;color:#fff;line-height:1;}
+    .avatar-overlay{
+      position:absolute;inset:0;background:rgba(0,0,0,.45);
+      border-radius:50%;display:flex;align-items:center;justify-content:center;
+      opacity:0;transition:opacity .2s;
+    }
+    .avatar-wrap:hover .avatar-overlay{opacity:1;}
+    .avatar-overlay span{font-size:.65rem;color:#fff;font-weight:600;text-align:center;line-height:1.3;}
     #avatarInput{display:none;}
 
-    .hero-name{font-size:1.15rem;font-weight:700;color:var(--txt);}
-    .hero-email{font-size:.78rem;color:var(--txt-sub);margin-top:.1rem;}
-    .badge-row{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.5rem;}
-    .badge{display:inline-flex;align-items:center;gap:.3rem;font-size:.65rem;font-weight:700;letter-spacing:.05em;padding:3px 10px;border-radius:20px;background:rgba(34,197,94,.15);color:#16a34a;border:1px solid rgba(34,197,94,.3);}
-    [data-theme="dark"] .badge{background:rgba(74,222,128,.15);color:#4ade80;}
-    .badge-blue{background:rgba(59,130,246,.15);color:#3b82f6;border-color:rgba(59,130,246,.3);}
-    .badge-amber{background:rgba(245,158,11,.15);color:#d97706;border-color:rgba(245,158,11,.3);}
+    .hero-name{font-size:1.25rem;font-weight:700;color:var(--txt);}
+    .hero-email{font-size:.78rem;color:var(--txt-dim);margin-top:.2rem;}
+    .hero-role{
+      display:inline-block;margin-top:.5rem;
+      font-size:.68rem;font-weight:700;letter-spacing:.06em;
+      padding:3px 12px;border-radius:20px;
+      background:var(--tag-bg);color:var(--tag-c);border:1px solid var(--tag-bd);
+    }
+    .hero-mood{font-size:.8rem;color:var(--txt-md);margin-top:.5rem;min-height:1.2rem;font-style:italic;}
 
-    /* ── STATS ROW ── */
-    .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin:1rem 0 0;}
-    .stat-box{background:var(--inp-bg);border:1px solid var(--sec-div);border-radius:12px;padding:.65rem .5rem;text-align:center;}
-    .stat-num{font-size:1.05rem;font-weight:700;color:var(--g-md);}
-    .stat-lbl{font-size:.62rem;color:var(--txt-sub);margin-top:.1rem;font-weight:500;}
-
-    /* ── SECTION CARD ── */
+    /* ── SECTION CARDS ── */
     .sec-card{background:var(--card);border-radius:18px;box-shadow:var(--shadow);border:1px solid var(--sec-div);overflow:hidden;margin-bottom:1.2rem;transition:background .4s;}
-    .sec-head{padding:.9rem 1.4rem .7rem;border-bottom:1px solid var(--sec-div);display:flex;align-items:center;justify-content:space-between;}
-    .sec-head h3{font-size:.75rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--g-md);display:flex;align-items:center;gap:.4rem;}
+    .sec-head{padding:.9rem 1.4rem .7rem;border-bottom:1px solid var(--sec-div);display:flex;align-items:center;gap:.5rem;}
+    .sec-head-icon{width:26px;height:26px;border-radius:7px;background:var(--tag-bg);display:grid;place-items:center;flex-shrink:0;}
+    .sec-head h3{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--g-md);}
     .sec-body{padding:1.1rem 1.4rem 1.3rem;}
 
-    /* ── FORM FIELDS ── */
     .fg{margin-bottom:.85rem;}
     .fg:last-child{margin-bottom:0;}
-    .fg-row{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;}
-    label{display:block;font-size:.75rem;font-weight:500;color:var(--txt-md);margin-bottom:.3rem;}
-    input,textarea,select{
-      width:100%;padding:.6rem .9rem;
-      background:var(--inp-bg);border:1.5px solid var(--border);border-radius:10px;
+    label{display:block;font-size:.77rem;font-weight:500;color:var(--txt-md);margin-bottom:.3rem;}
+    input[type=text],input[type=email],input[type=password],input[type=url],textarea,select{
+      width:100%;background:var(--inp-bg);border:1.5px solid var(--border);border-radius:10px;
       color:var(--txt);font-family:'Kanit',sans-serif;font-size:.88rem;
-      outline:none;transition:border .2s,box-shadow .2s,background .25s;
-      appearance:none;
+      padding:.6rem .9rem;outline:none;
+      transition:border .2s,box-shadow .2s,background .25s,color .25s;
+      appearance:none;-webkit-appearance:none;
     }
-    input{height:42px;}
-    textarea{height:88px;resize:vertical;line-height:1.5;}
-    select{height:42px;cursor:pointer;}
+    input[type=text],input[type=email],input[type=password],input[type=url],select{height:42px;}
+    textarea{resize:vertical;min-height:72px;line-height:1.6;}
     input:focus,textarea:focus,select:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.14);background:rgba(239,246,255,.5);}
     [data-theme="dark"] input:focus,[data-theme="dark"] textarea:focus,[data-theme="dark"] select:focus{background:rgba(37,99,235,.18);color:#dbeafe;}
-    input:disabled{opacity:.55;cursor:not-allowed;}
-    .inp-icon{position:relative;}
-    .inp-icon input{padding-left:2.4rem;}
-    .inp-icon .icon{position:absolute;left:.8rem;top:50%;transform:translateY(-50%);font-size:.95rem;pointer-events:none;}
+    input:disabled{opacity:.5;cursor:not-allowed;}
+    .sel-wrap{position:relative;}
+    .sel-wrap::after{content:'▾';position:absolute;right:.8rem;top:50%;transform:translateY(-50%);color:var(--g-md);font-size:.82rem;pointer-events:none;}
+    select{padding:.6rem 2rem .6rem .9rem;}
+    .hint{font-size:.7rem;color:var(--txt-dim);margin-top:.25rem;}
 
-    /* ── SOCIAL LINK ROW ── */
-    .social-row{display:flex;align-items:center;gap:.6rem;margin-bottom:.7rem;}
-    .social-row:last-child{margin-bottom:0;}
-    .social-icon{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;font-size:1rem;flex-shrink:0;border:1.5px solid var(--border);background:var(--inp-bg);}
-    .social-row input{flex:1;}
+    /* Color picker row */
+    .color-row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;}
+    .color-swatch{
+      width:30px;height:30px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;
+      transition:transform .2s,border-color .2s,box-shadow .2s;flex-shrink:0;
+    }
+    .color-swatch:hover{transform:scale(1.15);}
+    .color-swatch.active{border-color:#fff;box-shadow:0 0 0 2px currentColor,0 2px 8px rgba(0,0,0,.25);}
+    .color-custom{width:30px;height:30px;border-radius:50%;border:2px dashed var(--border);background:var(--inp-bg);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.75rem;transition:all .2s;}
+    .color-custom:hover{border-style:solid;}
 
-    /* ── BUTTONS ── */
+    /* Emoji / mood row */
+    .emoji-row{display:flex;gap:.4rem;flex-wrap:wrap;}
+    .emoji-btn{
+      padding:.3rem .6rem;border-radius:20px;border:1.5px solid var(--border);
+      background:var(--inp-bg);cursor:pointer;font-size:1rem;
+      transition:all .18s;user-select:none;
+    }
+    .emoji-btn:hover{transform:scale(1.2);}
+    .emoji-btn.active{border-color:var(--g-lt);background:var(--tag-bg);box-shadow:0 2px 8px rgba(34,197,94,.2);}
+
+    /* Theme big buttons */
+    .theme-row{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;}
+    .theme-opt{
+      padding:.85rem .7rem;border-radius:13px;border:2px solid var(--border);
+      cursor:pointer;text-align:center;transition:all .2s;
+      background:var(--inp-bg);
+    }
+    .theme-opt:hover{border-color:var(--g-lt);}
+    .theme-opt.active{border-color:var(--g-md);background:var(--tag-bg);box-shadow:0 0 0 3px rgba(34,197,94,.12);}
+    .theme-opt .preview{font-size:1.5rem;display:block;margin-bottom:.35rem;}
+    .theme-opt .label{font-size:.78rem;font-weight:600;color:var(--txt-md);}
+    .theme-opt .desc{font-size:.65rem;color:var(--txt-dim);margin-top:.15rem;}
+
+    /* Font size slider */
+    .slider-wrap{display:flex;align-items:center;gap:.8rem;}
+    input[type=range]{
+      flex:1;height:6px;border-radius:3px;
+      background:var(--sec-div);outline:none;border:none;
+      accent-color:var(--g-md);cursor:pointer;padding:0;
+    }
+    .slider-val{font-size:.82rem;font-weight:700;color:var(--g-md);min-width:36px;text-align:right;}
+
+    /* Divider */
+    .divider{height:1px;background:var(--sec-div);margin:.75rem 0;}
+
+    /* Buttons */
     .btn-save{
-      width:100%;height:44px;margin-top:.4rem;
-      background:linear-gradient(135deg,#14532d,#15803d 55%,#22c55e);
+      width:100%;height:44px;background:linear-gradient(135deg,#14532d,#15803d 55%,#22c55e);
       border:none;border-radius:11px;color:#fff;
-      font-family:'Kanit',sans-serif;font-size:.93rem;font-weight:700;
-      letter-spacing:.05em;cursor:pointer;transition:transform .2s,box-shadow .2s;
+      font-family:'Kanit',sans-serif;font-size:.95rem;font-weight:700;letter-spacing:.06em;
+      cursor:pointer;transition:transform .2s,box-shadow .2s;margin-top:.3rem;
     }
     .btn-save:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(22,101,52,.28);}
     .btn-save:active{transform:translateY(0);}
     .btn-save:disabled{opacity:.5;cursor:not-allowed;transform:none;}
-    .btn-ghost{
-      width:100%;height:38px;margin-top:.4rem;
-      background:transparent;border:1.5px solid var(--border);border-radius:11px;
-      color:var(--g-md);font-family:'Kanit',sans-serif;font-size:.85rem;font-weight:600;
+    .btn-sm{
+      height:36px;padding:0 1.1rem;background:var(--tag-bg);
+      border:1.5px solid var(--tag-bd);border-radius:9px;
+      color:var(--tag-c);font-family:'Kanit',sans-serif;font-size:.8rem;font-weight:600;
       cursor:pointer;transition:all .2s;
     }
-    .btn-ghost:hover{background:var(--sec-div);}
+    .btn-sm:hover{background:var(--g-md);color:#fff;border-color:var(--g-md);}
+    .btn-row{display:flex;gap:.6rem;align-items:center;}
 
-    /* ── TOASTS ── */
-    .toast-ok{display:none;margin-top:.65rem;padding:.55rem .9rem;background:#f0fdf4;border:1px solid #86efac;border-radius:9px;font-size:.76rem;color:#15803d;text-align:center;}
-    .toast-ok.show{display:block;animation:popIn .3s ease;}
-    .toast-err{display:none;margin-top:.65rem;padding:.55rem .9rem;background:var(--red-pale);border:1px solid #fca5a5;border-radius:9px;font-size:.76rem;color:var(--red);text-align:center;}
+    /* Toasts */
+    .toast-ok{display:none;margin-top:.6rem;padding:.55rem .9rem;background:#f0fdf4;border:1px solid #86efac;border-radius:9px;font-size:.76rem;color:#15803d;text-align:center;animation:popIn .3s ease;}
+    .toast-ok.show{display:block;}
+    .toast-err{display:none;margin-top:.6rem;padding:.55rem .9rem;background:var(--red-pale);border:1px solid #fca5a5;border-radius:9px;font-size:.76rem;color:var(--red);text-align:center;}
     .toast-err.show{display:block;}
     @keyframes popIn{from{opacity:0;transform:scale(.96);}to{opacity:1;transform:scale(1);}}
 
-    /* ── MISC ── */
-    .hint{font-size:.69rem;color:var(--txt-dim);margin-top:.22rem;}
-    .divider{height:1px;background:var(--sec-div);margin:.7rem 0;}
-    .section-note{font-size:.72rem;color:var(--txt-sub);font-style:italic;}
-    .char-count{font-size:.67rem;color:var(--txt-dim);text-align:right;margin-top:.15rem;}
+    /* Stats bar */
+    .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;margin-bottom:1.2rem;}
+    .stat-card{background:var(--card);border-radius:14px;padding:.9rem .7rem;text-align:center;box-shadow:var(--shadow-sm);border:1px solid var(--sec-div);transition:background .4s;}
+    .stat-num{font-size:1.4rem;font-weight:700;color:var(--g-md);}
+    .stat-lbl{font-size:.65rem;color:var(--txt-dim);margin-top:.15rem;letter-spacing:.04em;}
 
-    /* ── DANGER ZONE ── */
-    .danger-zone{background:var(--red-pale);border:1px solid rgba(220,38,38,.2);border-radius:14px;padding:1rem 1.3rem;margin-top:.5rem;}
-    .danger-zone p{font-size:.78rem;color:var(--red);margin-bottom:.7rem;}
-    .btn-danger{width:100%;height:40px;background:rgba(220,38,38,.12);border:1.5px solid rgba(220,38,38,.3);border-radius:10px;color:var(--red);font-family:'Kanit',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .2s;}
-    .btn-danger:hover{background:rgba(220,38,38,.22);}
-
-    /* ── THEME TOGGLE ── */
-    .theme-btn{position:fixed;bottom:1.6rem;right:1.6rem;z-index:999;width:48px;height:48px;border-radius:50%;border:none;cursor:pointer;display:grid;place-items:center;font-size:1.2rem;transition:transform .3s cubic-bezier(.34,1.56,.64,1),box-shadow .3s,background .4s;}
-    [data-theme="light"] .theme-btn{background:linear-gradient(135deg,#1e3a5f,#1e40af,#312e81);color:#fde68a;box-shadow:0 4px 18px rgba(30,58,138,.38);}
-    [data-theme="dark"] .theme-btn{background:linear-gradient(135deg,#fef08a,#fbbf24,#f59e0b);color:#1c1917;box-shadow:0 4px 18px rgba(251,191,36,.38);}
-    .theme-btn:hover{transform:scale(1.12) rotate(14deg);}
-
+    /* Spinner */
     .spinner{display:inline-block;width:13px;height:13px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
     @keyframes spin{to{transform:rotate(360deg);}}
 
-    /* ── AVATAR MODAL ── */
-    .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
-    .modal-bg.open{display:flex;animation:fadeIn .2s ease;}
-    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-    .modal-box{background:var(--card);border-radius:18px;padding:1.5rem;max-width:320px;width:calc(100% - 2rem);box-shadow:0 20px 60px rgba(0,0,0,.25);}
-    .modal-box h4{font-size:.95rem;font-weight:700;color:var(--txt);margin-bottom:1rem;}
-    .modal-preview{width:100px;height:100px;border-radius:50%;object-fit:cover;margin:0 auto .8rem;display:block;border:3px solid var(--border);}
-    .modal-actions{display:flex;gap:.6rem;margin-top:1rem;}
-    .modal-actions button{flex:1;}
+    /* Theme toggle FAB */
+    .theme-fab{position:fixed;bottom:1.6rem;right:1.6rem;z-index:999;width:48px;height:48px;border-radius:50%;border:none;cursor:pointer;display:grid;place-items:center;font-size:1.2rem;transition:transform .3s cubic-bezier(.34,1.56,.64,1),box-shadow .3s,background .4s;}
+    [data-theme="light"] .theme-fab{background:linear-gradient(135deg,#1e3a5f,#1e40af);color:#fde68a;box-shadow:0 4px 18px rgba(30,58,138,.38);}
+    [data-theme="dark"]  .theme-fab{background:linear-gradient(135deg,#fef08a,#fbbf24);color:#1c1917;box-shadow:0 4px 18px rgba(251,191,36,.38);}
+    .theme-fab:hover{transform:scale(1.13) rotate(14deg);}
 
-    /* ── PROGRESS BAR (profile completion) ── */
-    .profile-complete{background:var(--inp-bg);border:1px solid var(--sec-div);border-radius:12px;padding:.85rem 1rem;margin-bottom:1.2rem;}
-    .pc-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;}
-    .pc-label{font-size:.75rem;font-weight:600;color:var(--txt-md);}
-    .pc-pct{font-size:.75rem;font-weight:700;color:var(--g-md);}
-    .pc-bar{height:6px;background:var(--sec-div);border-radius:99px;overflow:hidden;}
-    .pc-fill{height:100%;background:linear-gradient(90deg,#14532d,#22c55e);border-radius:99px;transition:width .6s cubic-bezier(.34,1.56,.64,1);}
+    @media(max-width:440px){.stats-row{grid-template-columns:repeat(3,1fr);}.theme-row{grid-template-columns:1fr 1fr;}}
   </style>
 </head>
 <body>
 
 <!-- TOPBAR -->
 <div class="topbar">
-  <img src="img/logo.png">
+  <img src="img/logo.png" alt="Advance Plus" onerror="this.style.display='none'">
   <span class="topbar-title">Advance Plus</span>
-  <a href="index.html" class="nav-link">📋 ฟอร์ม</a>
-  <button class="btn-logout" onclick="doLogout()">ออกจากระบบ</button>
+  <a href="index.html" class="nav-btn">📋 ฟอร์ม</a>
+  <button class="nav-btn danger" onclick="doLogout()">ออกจากระบบ</button>
 </div>
 
 <div class="page-wrap">
 
-  <!-- HERO CARD -->
+  <!-- HERO -->
   <div class="hero-card">
-    <div class="cover-strip"></div>
-    <div class="hero-body">
-      <div class="avatar-wrap" onclick="document.getElementById('avatarInput').click()" title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์">
-        <div class="avatar-ring">
-          <img class="avatar-img" id="avatarImg" src="" alt="profile">
-          <div class="avatar-letter" id="avatarLetter">?</div>
-          <div class="avatar-overlay"><span>📷<br>เปลี่ยนรูป</span></div>
-        </div>
+    <div class="hero-bg-strip"></div>
+    <div class="avatar-wrap" onclick="document.getElementById('avatarInput').click()">
+      <div class="avatar-ring" id="avatarRing">
+        <img id="avatarImg" src="" alt="" style="display:none">
+        <span class="avatar-letter" id="avatarLetter">?</span>
       </div>
-      <input type="file" id="avatarInput" accept="image/*" onchange="handleAvatarUpload(event)">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.5rem;">
-        <div>
-          <div class="hero-name" id="displayNameShow">กำลังโหลด...</div>
-          <div class="hero-email" id="emailShow">—</div>
-          <div class="badge-row">
-            <span class="badge">✅ พนักงาน Advance Plus</span>
-            <span class="badge badge-blue" id="deptBadge" style="display:none"></span>
-            <span class="badge badge-amber" id="posBadge" style="display:none"></span>
-          </div>
-        </div>
-      </div>
-      <div class="stats-row" id="statsRow">
-        <div class="stat-box"><div class="stat-num" id="statJoin">—</div><div class="stat-lbl">วันที่สมัคร</div></div>
-        <div class="stat-box"><div class="stat-num" id="statProvider">Email</div><div class="stat-lbl">ประเภทบัญชี</div></div>
-        <div class="stat-box"><div class="stat-num" id="statDays">—</div><div class="stat-lbl">วันที่ใช้งาน</div></div>
-      </div>
+      <div class="avatar-overlay"><span>📷<br>เปลี่ยนรูป</span></div>
     </div>
+    <input type="file" id="avatarInput" accept="image/*" onchange="uploadAvatar(this)">
+    <div class="hero-name" id="heroName">กำลังโหลด...</div>
+    <div class="hero-email" id="heroEmail">—</div>
+    <div class="hero-role" id="heroRole">พนักงาน Advance Plus</div>
+    <div class="hero-mood" id="heroMood"></div>
   </div>
 
-  <!-- PROFILE COMPLETION BAR -->
-  <div class="profile-complete">
-    <div class="pc-header">
-      <span class="pc-label">🏆 ความสมบูรณ์ของโปรไฟล์</span>
-      <span class="pc-pct" id="pcPct">0%</span>
-    </div>
-    <div class="pc-bar"><div class="pc-fill" id="pcFill" style="width:0%"></div></div>
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-num" id="statDays">—</div><div class="stat-lbl">วันที่เข้าร่วม</div></div>
+    <div class="stat-card"><div class="stat-num" id="statLogin">—</div><div class="stat-lbl">เข้าสู่ระบบ</div></div>
+    <div class="stat-card"><div class="stat-num" id="statTheme">🌿</div><div class="stat-lbl">ธีมปัจจุบัน</div></div>
   </div>
 
-  <!-- ข้อมูลส่วนตัว -->
+  <!-- SECTION: ข้อมูลส่วนตัว -->
   <div class="sec-card">
-    <div class="sec-head"><h3>👤 ข้อมูลส่วนตัว</h3></div>
+    <div class="sec-head">
+      <div class="sec-head-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--g-md)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+      <h3>ข้อมูลส่วนตัว</h3>
+    </div>
     <div class="sec-body">
       <div class="fg">
-        <label for="newName">ชื่อที่แสดง</label>
+        <label>ชื่อที่แสดง</label>
         <input type="text" id="newName" placeholder="ชื่อ-นามสกุล">
-        <p class="hint">ชื่อนี้จะแสดงในระบบและฟอร์ม</p>
+      </div>
+      <div class="fg">
+        <label>ตำแหน่ง / แผนก</label>
+        <input type="text" id="roleField" placeholder="เช่น ช่างเทคนิค, Sales">
+        <p class="hint">แสดงใต้ชื่อบนโปรไฟล์</p>
+      </div>
+      <div class="fg">
+        <label>สถานะ / ข้อความ Mood</label>
+        <input type="text" id="moodField" placeholder="เช่น กำลังงานหนัก 🔥, พร้อมรับงาน ✅" maxlength="60">
       </div>
       <div class="fg">
         <label>อีเมล</label>
         <input type="email" id="emailField" disabled>
-        <p class="hint">ไม่สามารถเปลี่ยนอีเมลได้ในระบบนี้</p>
       </div>
-      <div class="fg">
-        <label for="bioField">เกี่ยวกับฉัน</label>
-        <textarea id="bioField" placeholder="แนะนำตัวเองสั้น ๆ ..." maxlength="160" oninput="updateCharCount()"></textarea>
-        <div class="char-count"><span id="bioCount">0</span>/160</div>
-      </div>
-      <div class="fg-row">
-        <div class="fg" style="margin-bottom:0">
-          <label for="birthdayField">วันเกิด</label>
-          <input type="date" id="birthdayField">
-        </div>
-        <div class="fg" style="margin-bottom:0">
-          <label for="genderField">เพศ</label>
-          <select id="genderField">
-            <option value="">— เลือก —</option>
-            <option value="ชาย">ชาย</option>
-            <option value="หญิง">หญิง</option>
-            <option value="อื่น ๆ">อื่น ๆ</option>
-            <option value="ไม่ระบุ">ไม่ระบุ</option>
-          </select>
-        </div>
-      </div>
-      <button class="btn-save" id="btnSaveName" onclick="saveName()">💾 บันทึกข้อมูลส่วนตัว</button>
-      <div class="toast-ok" id="toastName">✅ บันทึกข้อมูลส่วนตัวเรียบร้อยแล้ว</div>
+      <button class="btn-save" id="btnSaveName" onclick="saveName()">💾 บันทึกข้อมูล</button>
+      <div class="toast-ok" id="toastName">✅ บันทึกข้อมูลเรียบร้อย</div>
       <div class="toast-err" id="toastNameErr"></div>
     </div>
   </div>
 
-  <!-- ข้อมูลการทำงาน -->
+  <!-- SECTION: ธีมและการแสดงผล -->
   <div class="sec-card">
-    <div class="sec-head"><h3>💼 ข้อมูลการทำงาน</h3></div>
+    <div class="sec-head">
+      <div class="sec-head-icon">🎨</div>
+      <h3>ธีมและการแสดงผล</h3>
+    </div>
     <div class="sec-body">
-      <div class="fg-row">
-        <div class="fg" style="margin-bottom:0">
-          <label for="deptField">แผนก</label>
-          <select id="deptField" onchange="updateBadges()">
-            <option value="">— เลือก —</option>
-            <option value="IT">IT</option>
-            <option value="HR">HR</option>
-            <option value="การตลาด">การตลาด</option>
-            <option value="บัญชี/การเงิน">บัญชี/การเงิน</option>
-            <option value="ปฏิบัติการ">ปฏิบัติการ</option>
-            <option value="ขาย">ขาย</option>
-            <option value="จัดซื้อ">จัดซื้อ</option>
-            <option value="อื่น ๆ">อื่น ๆ</option>
-          </select>
-        </div>
-        <div class="fg" style="margin-bottom:0">
-          <label for="posField">ตำแหน่ง</label>
-          <input type="text" id="posField" placeholder="เช่น Senior Developer" oninput="updateBadges()">
+      <!-- Light / Dark -->
+      <div class="fg">
+        <label>โหมดสี</label>
+        <div class="theme-row">
+          <div class="theme-opt" id="optLight" onclick="setTheme('light')">
+            <span class="preview">☀️</span>
+            <div class="label">โหมดสว่าง</div>
+            <div class="desc">เขียวสดใส สบายตา</div>
+          </div>
+          <div class="theme-opt" id="optDark" onclick="setTheme('dark')">
+            <span class="preview">🌙</span>
+            <div class="label">โหมดมืด</div>
+            <div class="desc">เขียวป่า ถนอมตา</div>
+          </div>
         </div>
       </div>
-      <div class="fg" style="margin-top:.85rem">
-        <label for="empIdField">รหัสพนักงาน</label>
-        <input type="text" id="empIdField" placeholder="เช่น ADV-00123">
-      </div>
-      <div class="fg-row">
-        <div class="fg" style="margin-bottom:0">
-          <label for="startDateField">วันเริ่มงาน</label>
-          <input type="date" id="startDateField">
+
+      <!-- Accent color -->
+      <div class="fg">
+        <label>สีเน้น (Accent)</label>
+        <div class="color-row" id="accentRow">
+          <div class="color-swatch active" data-color="#16a34a" style="background:#16a34a;" onclick="setAccent('#16a34a',this)" title="เขียว"></div>
+          <div class="color-swatch" data-color="#2563eb" style="background:#2563eb;" onclick="setAccent('#2563eb',this)" title="น้ำเงิน"></div>
+          <div class="color-swatch" data-color="#7c3aed" style="background:#7c3aed;" onclick="setAccent('#7c3aed',this)" title="ม่วง"></div>
+          <div class="color-swatch" data-color="#db2777" style="background:#db2777;" onclick="setAccent('#db2777',this)" title="ชมพู"></div>
+          <div class="color-swatch" data-color="#ea580c" style="background:#ea580c;" onclick="setAccent('#ea580c',this)" title="ส้ม"></div>
+          <div class="color-swatch" data-color="#0891b2" style="background:#0891b2;" onclick="setAccent('#0891b2',this)" title="ฟ้า"></div>
+          <div class="color-swatch" data-color="#65a30d" style="background:#65a30d;" onclick="setAccent('#65a30d',this)" title="มะนาว"></div>
+          <div class="color-swatch" data-color="#be123c" style="background:#be123c;" onclick="setAccent('#be123c',this)" title="แดง"></div>
+          <label class="color-custom" title="สีเอง">
+            🎨
+            <input type="color" style="display:none;width:0;height:0;" onchange="setAccent(this.value,null)">
+          </label>
         </div>
-        <div class="fg" style="margin-bottom:0">
-          <label for="workTypeField">รูปแบบการทำงาน</label>
-          <select id="workTypeField">
-            <option value="">— เลือก —</option>
-            <option value="On-site">On-site</option>
-            <option value="Remote">Remote</option>
-            <option value="Hybrid">Hybrid</option>
-          </select>
+        <p class="hint">สีนี้จะเปลี่ยนกรอบและปุ่มหลักของฟอร์ม</p>
+      </div>
+
+      <!-- Font size -->
+      <div class="fg">
+        <label>ขนาดตัวอักษรฟอร์ม</label>
+        <div class="slider-wrap">
+          <span style="font-size:.75rem;color:var(--txt-dim);">A</span>
+          <input type="range" id="fontSizeSlider" min="12" max="18" value="14" step="1" oninput="previewFontSize(this.value)">
+          <span style="font-size:1rem;color:var(--txt-dim);">A</span>
+          <span class="slider-val" id="fontSizeVal">14px</span>
+        </div>
+        <p class="hint">ขนาดตัวอักษรในช่องกรอกข้อมูล</p>
+      </div>
+
+      <!-- Border radius -->
+      <div class="fg">
+        <label>ความโค้งมน (Border Radius)</label>
+        <div class="slider-wrap">
+          <span style="font-size:.75rem;color:var(--txt-dim);">▢</span>
+          <input type="range" id="radiusSlider" min="4" max="20" value="10" step="2" oninput="previewRadius(this.value)">
+          <span style="font-size:.75rem;color:var(--txt-dim);">◯</span>
+          <span class="slider-val" id="radiusVal">10px</span>
         </div>
       </div>
-      <div class="fg" style="margin-top:.85rem">
-        <label for="locationField">สถานที่ทำงาน / สาขา</label>
-        <input type="text" id="locationField" placeholder="เช่น สำนักงานใหญ่ กรุงเทพฯ">
-      </div>
-      <button class="btn-save" id="btnSaveWork" onclick="saveWork()">💾 บันทึกข้อมูลการทำงาน</button>
-      <div class="toast-ok" id="toastWork">✅ บันทึกข้อมูลการทำงานเรียบร้อยแล้ว</div>
-      <div class="toast-err" id="toastWorkErr"></div>
+
+      <button class="btn-save" onclick="saveAppearance()">🎨 บันทึกการตั้งค่า</button>
+      <div class="toast-ok" id="toastTheme">✅ บันทึกธีมเรียบร้อย</div>
     </div>
   </div>
 
-  <!-- ข้อมูลติดต่อ -->
+  <!-- SECTION: Mood & Status -->
   <div class="sec-card">
-    <div class="sec-head"><h3>📞 ข้อมูลติดต่อ</h3></div>
+    <div class="sec-head">
+      <div class="sec-head-icon">😊</div>
+      <h3>อีโมจิประจำตัว</h3>
+    </div>
     <div class="sec-body">
       <div class="fg">
-        <label for="phoneField">เบอร์โทรศัพท์</label>
-        <div class="inp-icon">
-          <span class="icon">📱</span>
-          <input type="tel" id="phoneField" placeholder="0xx-xxx-xxxx">
+        <label>เลือกอีโมจิที่ชอบ (จะแสดงข้างชื่อ)</label>
+        <div class="emoji-row" id="emojiRow">
+          <div class="emoji-btn active" data-val="⚡" onclick="pickEmoji(this)">⚡</div>
+          <div class="emoji-btn" data-val="🌿" onclick="pickEmoji(this)">🌿</div>
+          <div class="emoji-btn" data-val="🔥" onclick="pickEmoji(this)">🔥</div>
+          <div class="emoji-btn" data-val="🌟" onclick="pickEmoji(this)">🌟</div>
+          <div class="emoji-btn" data-val="🎯" onclick="pickEmoji(this)">🎯</div>
+          <div class="emoji-btn" data-val="💪" onclick="pickEmoji(this)">💪</div>
+          <div class="emoji-btn" data-val="🚀" onclick="pickEmoji(this)">🚀</div>
+          <div class="emoji-btn" data-val="☕" onclick="pickEmoji(this)">☕</div>
+          <div class="emoji-btn" data-val="🎮" onclick="pickEmoji(this)">🎮</div>
+          <div class="emoji-btn" data-val="🐢" onclick="pickEmoji(this)">🐢</div>
+          <div class="emoji-btn" data-val="🦊" onclick="pickEmoji(this)">🦊</div>
+          <div class="emoji-btn" data-val="🐉" onclick="pickEmoji(this)">🐉</div>
         </div>
       </div>
-      <div class="fg">
-        <label for="lineField">LINE ID</label>
-        <div class="inp-icon">
-          <span class="icon">💬</span>
-          <input type="text" id="lineField" placeholder="LINE ID ของคุณ">
-        </div>
-      </div>
-      <div class="fg">
-        <label for="extField">เบอร์ภายใน (Extension)</label>
-        <div class="inp-icon">
-          <span class="icon">☎️</span>
-          <input type="text" id="extField" placeholder="เช่น 1234">
-        </div>
-      </div>
-      <button class="btn-save" id="btnSaveContact" onclick="saveContact()">💾 บันทึกข้อมูลติดต่อ</button>
-      <div class="toast-ok" id="toastContact">✅ บันทึกข้อมูลติดต่อเรียบร้อยแล้ว</div>
-      <div class="toast-err" id="toastContactErr"></div>
+      <button class="btn-save" onclick="saveEmoji()">😊 บันทึกอีโมจิ</button>
+      <div class="toast-ok" id="toastEmoji">✅ บันทึกแล้ว</div>
     </div>
   </div>
 
-  <!-- Social Links -->
+  <!-- SECTION: เปลี่ยนรหัสผ่าน -->
   <div class="sec-card">
-    <div class="sec-head"><h3>🔗 Social Links</h3></div>
-    <div class="sec-body">
-      <div class="social-row">
-        <div class="social-icon">🌐</div>
-        <input type="url" id="websiteField" placeholder="เว็บไซต์ส่วนตัว https://...">
-      </div>
-      <div class="social-row">
-        <div class="social-icon" style="background:#0e76a8;border-color:#0e76a8;color:#fff;">in</div>
-        <input type="url" id="linkedinField" placeholder="LinkedIn URL">
-      </div>
-      <div class="social-row">
-        <div class="social-icon" style="background:#1d9bf0;border-color:#1d9bf0;color:#fff;">𝕏</div>
-        <input type="text" id="twitterField" placeholder="Twitter / X (@username)">
-      </div>
-      <div class="social-row">
-        <div class="social-icon" style="background:#24292e;border-color:#24292e;color:#fff;">⌨</div>
-        <input type="text" id="githubField" placeholder="GitHub username">
-      </div>
-      <button class="btn-save" id="btnSaveSocial" onclick="saveSocial()">💾 บันทึก Social Links</button>
-      <div class="toast-ok" id="toastSocial">✅ บันทึก Social Links เรียบร้อยแล้ว</div>
-      <div class="toast-err" id="toastSocialErr"></div>
+    <div class="sec-head">
+      <div class="sec-head-icon">🔐</div>
+      <h3>เปลี่ยนรหัสผ่าน</h3>
     </div>
-  </div>
-
-  <!-- เปลี่ยนรหัสผ่าน -->
-  <div class="sec-card">
-    <div class="sec-head"><h3>🔐 เปลี่ยนรหัสผ่าน</h3></div>
     <div class="sec-body">
       <div class="fg">
-        <label for="curPass">รหัสผ่านปัจจุบัน</label>
+        <label>รหัสผ่านปัจจุบัน</label>
         <input type="password" id="curPass" placeholder="กรอกรหัสผ่านเดิม" autocomplete="current-password">
       </div>
       <div class="divider"></div>
       <div class="fg">
-        <label for="newPass">รหัสผ่านใหม่</label>
+        <label>รหัสผ่านใหม่</label>
         <input type="password" id="newPass" placeholder="อย่างน้อย 6 ตัวอักษร" autocomplete="new-password">
       </div>
       <div class="fg">
-        <label for="confPass">ยืนยันรหัสผ่านใหม่</label>
+        <label>ยืนยันรหัสผ่านใหม่</label>
         <input type="password" id="confPass" placeholder="พิมพ์รหัสผ่านใหม่อีกครั้ง" autocomplete="new-password">
       </div>
       <button class="btn-save" id="btnSavePass" onclick="changePassword()">🔐 เปลี่ยนรหัสผ่าน</button>
-      <div class="toast-ok" id="toastPass">✅ เปลี่ยนรหัสผ่านเรียบร้อยแล้ว</div>
+      <div class="toast-ok" id="toastPass">✅ เปลี่ยนรหัสผ่านเรียบร้อย</div>
       <div class="toast-err" id="toastPassErr"></div>
     </div>
   </div>
 
 </div><!-- /page-wrap -->
-
-<button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
+<button class="theme-fab" id="themeFab" onclick="toggleTheme()">🌙</button>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script>
-  firebase.initializeApp({
-    apiKey:"AIzaSyDgyBh_OWjnIpok3gR9LUsT0CAqGK6FVao",
-    authDomain:"advance-plus-form.firebaseapp.com",
-    projectId:"advance-plus-form",
-    storageBucket:"advance-plus-form.firebasestorage.app",
-    messagingSenderId:"130477031774",
-    appId:"1:130477031774:web:09345e091812be63d04fcf"
+firebase.initializeApp({
+  apiKey:"AIzaSyDgyBh_OWjnIpok3gR9LUsT0CAqGK6FVao",
+  authDomain:"advance-plus-form.firebaseapp.com",
+  projectId:"advance-plus-form",
+  storageBucket:"advance-plus-form.firebasestorage.app",
+  messagingSenderId:"130477031774",
+  appId:"1:130477031774:web:09345e091812be63d04fcf"
+});
+const auth = firebase.auth();
+
+// ── LOAD PREFS FROM LOCALSTORAGE ──
+function getPref(k,def){ return localStorage.getItem('adv_'+k) ?? def; }
+function setPref(k,v){ localStorage.setItem('adv_'+k,v); }
+
+// ── AUTH GUARD + INIT ──
+auth.onAuthStateChanged(user => {
+  if (!user) { window.location.href = 'login.html'; return; }
+
+  const prefs = {
+    role:  getPref('role','พนักงาน Advance Plus'),
+    mood:  getPref('mood',''),
+    emoji: getPref('emoji','⚡'),
+    accent:getPref('accent','#16a34a'),
+    fs:    parseInt(getPref('fontSize','14')),
+    radius:parseInt(getPref('radius','10')),
+    avatar:getPref('avatar',''),
+  };
+
+  // Fill fields
+  document.getElementById('newName').value  = user.displayName || '';
+  document.getElementById('emailField').value = user.email;
+  document.getElementById('roleField').value  = prefs.role;
+  document.getElementById('moodField').value  = prefs.mood;
+  document.getElementById('fontSizeSlider').value = prefs.fs;
+  document.getElementById('fontSizeVal').textContent = prefs.fs + 'px';
+  document.getElementById('radiusSlider').value = prefs.radius;
+  document.getElementById('radiusVal').textContent = prefs.radius + 'px';
+
+  // Hero
+  const nameStr = user.displayName || user.email.split('@')[0];
+  document.getElementById('heroName').textContent  = prefs.emoji + ' ' + nameStr;
+  document.getElementById('heroEmail').textContent = user.email;
+  document.getElementById('heroRole').textContent  = prefs.role;
+  document.getElementById('heroMood').textContent  = prefs.mood;
+  document.getElementById('avatarLetter').textContent = nameStr.charAt(0).toUpperCase();
+
+  // Avatar image
+  if (prefs.avatar) {
+    document.getElementById('avatarImg').src = prefs.avatar;
+    document.getElementById('avatarImg').style.display = 'block';
+    document.getElementById('avatarLetter').style.display = 'none';
+  }
+
+  // Stats
+  const created = user.metadata.creationTime;
+  if (created) {
+    const days = Math.floor((Date.now() - new Date(created)) / 86400000);
+    document.getElementById('statDays').textContent = days + ' วัน';
+  }
+  const lc = user.metadata.lastSignInTime;
+  if (lc) {
+    const d = new Date(lc);
+    document.getElementById('statLogin').textContent = d.toLocaleDateString('th-TH',{day:'2-digit',month:'short'});
+  }
+  const t = getPref('theme','light');
+  document.getElementById('statTheme').textContent = t === 'dark' ? '🌙' : '🌿';
+
+  // Accent color
+  applyAccent(prefs.accent);
+  document.querySelectorAll('.color-swatch').forEach(s => {
+    s.classList.toggle('active', s.dataset.color === prefs.accent);
   });
-  const auth = firebase.auth();
 
-  // ── AUTH GUARD ──
-  auth.onAuthStateChanged(user => {
-    if (!user) { window.location.href = 'login.html'; return; }
-    const name  = user.displayName || '';
-    const email = user.email || '';
-    document.getElementById('displayNameShow').textContent = name || '(ยังไม่ได้ตั้งชื่อ)';
-    document.getElementById('emailShow').textContent       = email;
-    document.getElementById('emailField').value            = email;
-    document.getElementById('newName').value               = name;
-
-    // avatar
-    const savedAvatar = localStorage.getItem('adv_avatar_' + user.uid);
-    if (savedAvatar) {
-      showAvatarImg(savedAvatar);
-    } else if (user.photoURL) {
-      showAvatarImg(user.photoURL);
-    } else {
-      document.getElementById('avatarLetter').textContent = (name || email).charAt(0).toUpperCase();
-    }
-
-    // stats
-    const created = user.metadata.creationTime;
-    if (created) {
-      const d = new Date(created);
-      document.getElementById('statJoin').textContent = d.toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'});
-      const days = Math.floor((Date.now() - d) / 86400000);
-      document.getElementById('statDays').textContent = days.toLocaleString() + ' วัน';
-    }
-    const providers = user.providerData.map(p => p.providerId);
-    document.getElementById('statProvider').textContent = providers.includes('google.com') ? 'Google' : 'Email';
-
-    loadLocalProfile(user.uid);
-    updateCompletion();
+  // Emoji active
+  document.querySelectorAll('.emoji-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.val === prefs.emoji);
   });
 
-  function showAvatarImg(src) {
-    const img = document.getElementById('avatarImg');
-    const letter = document.getElementById('avatarLetter');
-    img.src = src;
-    img.style.display = 'block';
-    letter.style.display = 'none';
-  }
+  // Theme active
+  updateThemeOpts();
+});
 
-  // ── AVATAR UPLOAD ──
-  function handleAvatarUpload(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { alert('ไฟล์รูปต้องไม่เกิน 2MB'); return; }
-    const reader = new FileReader();
-    reader.onload = function(ev) {
-      const dataUrl = ev.target.result;
-      showAvatarImg(dataUrl);
-      const user = auth.currentUser;
-      if (user) {
-        localStorage.setItem('adv_avatar_' + user.uid, dataUrl);
-        updateCompletion();
-      }
-    };
-    reader.readAsDataURL(file);
-  }
+// ── AVATAR UPLOAD ──
+function uploadAvatar(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { alert('รูปต้องไม่เกิน 2MB'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const data = e.target.result;
+    setPref('avatar', data);
+    document.getElementById('avatarImg').src = data;
+    document.getElementById('avatarImg').style.display = 'block';
+    document.getElementById('avatarLetter').style.display = 'none';
+    showOk('toastName');
+  };
+  reader.readAsDataURL(file);
+}
 
-  // ── LOCAL PROFILE (localStorage) ──
-  function getProfileKey(uid) { return 'adv_profile_' + uid; }
-  function loadLocalProfile(uid) {
-    const raw = localStorage.getItem(getProfileKey(uid));
-    if (!raw) return;
-    try {
-      const p = JSON.parse(raw);
-      if (p.bio)       document.getElementById('bioField').value      = p.bio;
-      if (p.birthday)  document.getElementById('birthdayField').value = p.birthday;
-      if (p.gender)    document.getElementById('genderField').value   = p.gender;
-      if (p.dept)      { document.getElementById('deptField').value    = p.dept; }
-      if (p.pos)       document.getElementById('posField').value      = p.pos;
-      if (p.empId)     document.getElementById('empIdField').value    = p.empId;
-      if (p.startDate) document.getElementById('startDateField').value= p.startDate;
-      if (p.workType)  document.getElementById('workTypeField').value = p.workType;
-      if (p.location)  document.getElementById('locationField').value = p.location;
-      if (p.phone)     document.getElementById('phoneField').value    = p.phone;
-      if (p.line)      document.getElementById('lineField').value     = p.line;
-      if (p.ext)       document.getElementById('extField').value      = p.ext;
-      if (p.website)   document.getElementById('websiteField').value  = p.website;
-      if (p.linkedin)  document.getElementById('linkedinField').value = p.linkedin;
-      if (p.twitter)   document.getElementById('twitterField').value  = p.twitter;
-      if (p.github)    document.getElementById('githubField').value   = p.github;
-      updateCharCount();
-      updateBadges();
-      updateCompletion();
-    } catch(e) {}
-  }
-  function saveLocalProfile(uid, partial) {
-    const key = getProfileKey(uid);
-    const existing = JSON.parse(localStorage.getItem(key) || '{}');
-    const merged = Object.assign(existing, partial);
-    localStorage.setItem(key, JSON.stringify(merged));
-  }
+// ── SAVE NAME / ROLE / MOOD ──
+async function saveName() {
+  const name = document.getElementById('newName').value.trim();
+  const role = document.getElementById('roleField').value.trim() || 'พนักงาน Advance Plus';
+  const mood = document.getElementById('moodField').value.trim();
+  const emoji= getPref('emoji','⚡');
+  const btn  = document.getElementById('btnSaveName');
+  hideAll('Name');
+  if (!name) { showErr('toastNameErr','กรุณากรอกชื่อ'); return; }
+  btn.innerHTML = '<span class="spinner"></span>บันทึก...'; btn.disabled = true;
+  try {
+    await auth.currentUser.updateProfile({ displayName: name });
+    setPref('role', role);
+    setPref('mood', mood);
+    document.getElementById('heroName').textContent  = emoji + ' ' + name;
+    document.getElementById('heroRole').textContent  = role;
+    document.getElementById('heroMood').textContent  = mood;
+    document.getElementById('avatarLetter').textContent = name.charAt(0).toUpperCase();
+    showOk('toastName');
+  } catch(e) { showErr('toastNameErr', e.message); }
+  btn.innerHTML = '💾 บันทึกข้อมูล'; btn.disabled = false;
+}
 
-  // ── SAVE NAME ──
-  async function saveName() {
-    const name = document.getElementById('newName').value.trim();
-    const bio  = document.getElementById('bioField').value.trim();
-    const bday = document.getElementById('birthdayField').value;
-    const gend = document.getElementById('genderField').value;
-    const btn  = document.getElementById('btnSaveName');
-    hideToasts('Name');
-    if (!name) { showErr('toastNameErr','กรุณากรอกชื่อ'); return; }
-    btn.innerHTML = '<span class="spinner"></span>กำลังบันทึก...'; btn.disabled = true;
-    try {
-      await auth.currentUser.updateProfile({ displayName: name });
-      document.getElementById('displayNameShow').textContent = name;
-      const letter = document.getElementById('avatarLetter');
-      if (letter.style.display !== 'none') letter.textContent = name.charAt(0).toUpperCase();
-      const uid = auth.currentUser.uid;
-      saveLocalProfile(uid, { bio, birthday: bday, gender: gend });
-      updateCompletion();
-      showOk('toastName');
-    } catch(e) { showErr('toastNameErr', e.message); }
-    btn.innerHTML = '💾 บันทึกข้อมูลส่วนตัว'; btn.disabled = false;
-  }
+// ── ACCENT COLOR ──
+function setAccent(color, el) {
+  applyAccent(color);
+  setPref('accent', color);
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+  if (el) el.classList.add('active');
+}
+function applyAccent(color) {
+  document.documentElement.style.setProperty('--g-md', color);
+  document.documentElement.style.setProperty('--g-dk', shadeColor(color, -20));
+  document.documentElement.style.setProperty('--g-lt', shadeColor(color, 25));
+  document.documentElement.style.setProperty('--border', shadeColor(color, 40));
+}
+function shadeColor(hex, pct) {
+  const num = parseInt(hex.replace('#',''),16);
+  const r = Math.min(255,Math.max(0,((num>>16)&0xff)+pct));
+  const g = Math.min(255,Math.max(0,((num>>8)&0xff)+pct));
+  const b = Math.min(255,Math.max(0,(num&0xff)+pct));
+  return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
 
-  // ── SAVE WORK ──
-  function saveWork() {
-    const user = auth.currentUser;
-    if (!user) return;
-    const dept      = document.getElementById('deptField').value;
-    const pos       = document.getElementById('posField').value.trim();
-    const empId     = document.getElementById('empIdField').value.trim();
-    const startDate = document.getElementById('startDateField').value;
-    const workType  = document.getElementById('workTypeField').value;
-    const location  = document.getElementById('locationField').value.trim();
-    saveLocalProfile(user.uid, { dept, pos, empId, startDate, workType, location });
-    updateBadges();
-    updateCompletion();
-    showOk('toastWork');
-  }
+// ── FONT SIZE ──
+function previewFontSize(v) {
+  document.getElementById('fontSizeVal').textContent = v + 'px';
+  document.querySelectorAll('input[type=text],textarea,select').forEach(el => el.style.fontSize = v+'px');
+}
 
-  // ── SAVE CONTACT ──
-  function saveContact() {
-    const user = auth.currentUser;
-    if (!user) return;
-    const phone = document.getElementById('phoneField').value.trim();
-    const line  = document.getElementById('lineField').value.trim();
-    const ext   = document.getElementById('extField').value.trim();
-    saveLocalProfile(user.uid, { phone, line, ext });
-    updateCompletion();
-    showOk('toastContact');
-  }
+// ── RADIUS ──
+function previewRadius(v) {
+  document.getElementById('radiusVal').textContent = v + 'px';
+  document.querySelectorAll('input[type=text],input[type=tel],textarea,select').forEach(el => el.style.borderRadius = v+'px');
+}
 
-  // ── SAVE SOCIAL ──
-  function saveSocial() {
-    const user = auth.currentUser;
-    if (!user) return;
-    const website  = document.getElementById('websiteField').value.trim();
-    const linkedin = document.getElementById('linkedinField').value.trim();
-    const twitter  = document.getElementById('twitterField').value.trim();
-    const github   = document.getElementById('githubField').value.trim();
-    saveLocalProfile(user.uid, { website, linkedin, twitter, github });
-    updateCompletion();
-    showOk('toastSocial');
-  }
+// ── SAVE APPEARANCE ──
+function saveAppearance() {
+  setPref('fontSize', document.getElementById('fontSizeSlider').value);
+  setPref('radius',   document.getElementById('radiusSlider').value);
+  document.getElementById('statTheme').textContent = getPref('theme','light') === 'dark' ? '🌙' : '🌿';
+  showOk('toastTheme');
+}
 
-  // ── CHANGE PASSWORD ──
-  async function changePassword() {
-    const cur  = document.getElementById('curPass').value;
-    const np   = document.getElementById('newPass').value;
-    const conf = document.getElementById('confPass').value;
-    const btn  = document.getElementById('btnSavePass');
-    hideToasts('Pass');
-    if (!cur)        { showErr('toastPassErr','กรุณากรอกรหัสผ่านปัจจุบัน'); return; }
-    if (np.length<6) { showErr('toastPassErr','รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร'); return; }
-    if (np !== conf) { showErr('toastPassErr','รหัสผ่านใหม่ไม่ตรงกัน'); return; }
-    btn.innerHTML = '<span class="spinner"></span>กำลังเปลี่ยน...'; btn.disabled = true;
-    try {
-      const user       = auth.currentUser;
-      const credential = firebase.auth.EmailAuthProvider.credential(user.email, cur);
-      await user.reauthenticateWithCredential(credential);
-      await user.updatePassword(np);
-      document.getElementById('curPass').value  = '';
-      document.getElementById('newPass').value  = '';
-      document.getElementById('confPass').value = '';
-      showOk('toastPass');
-    } catch(e) {
-      const msgs = {
-        'auth/wrong-password':        'รหัสผ่านปัจจุบันไม่ถูกต้อง',
-        'auth/invalid-credential':    'รหัสผ่านปัจจุบันไม่ถูกต้อง',
-        'auth/too-many-requests':     'ลองผิดหลายครั้ง กรุณารอสักครู่',
-        'auth/weak-password':         'รหัสผ่านใหม่ไม่ปลอดภัยพอ',
-        'auth/requires-recent-login': 'กรุณา logout แล้วล็อกอินใหม่ก่อนเปลี่ยนรหัสผ่าน',
-      };
-      showErr('toastPassErr', msgs[e.code] || e.message);
-    }
-    btn.innerHTML = '🔐 เปลี่ยนรหัสผ่าน'; btn.disabled = false;
-  }
+// ── EMOJI ──
+function pickEmoji(el) {
+  document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+function saveEmoji() {
+  const chosen = document.querySelector('.emoji-btn.active')?.dataset.val || '⚡';
+  setPref('emoji', chosen);
+  const name = auth.currentUser?.displayName || '';
+  document.getElementById('heroName').textContent = chosen + ' ' + name;
+  showOk('toastEmoji');
+}
 
-  // ── LOGOUT ──
-  async function doLogout() {
-    await auth.signOut();
-    window.location.href = 'login.html';
+// ── CHANGE PASSWORD ──
+async function changePassword() {
+  const cur=document.getElementById('curPass').value;
+  const np=document.getElementById('newPass').value;
+  const conf=document.getElementById('confPass').value;
+  const btn=document.getElementById('btnSavePass');
+  hideAll('Pass');
+  if (!cur){showErr('toastPassErr','กรุณากรอกรหัสผ่านปัจจุบัน');return;}
+  if (np.length<6){showErr('toastPassErr','รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัว');return;}
+  if (np!==conf){showErr('toastPassErr','รหัสผ่านใหม่ไม่ตรงกัน');return;}
+  btn.innerHTML='<span class="spinner"></span>กำลังเปลี่ยน...';btn.disabled=true;
+  try {
+    const user=auth.currentUser;
+    const cred=firebase.auth.EmailAuthProvider.credential(user.email,cur);
+    await user.reauthenticateWithCredential(cred);
+    await user.updatePassword(np);
+    document.getElementById('curPass').value='';
+    document.getElementById('newPass').value='';
+    document.getElementById('confPass').value='';
+    showOk('toastPass');
+  } catch(e){
+    const m={'auth/wrong-password':'รหัสผ่านปัจจุบันไม่ถูกต้อง','auth/invalid-credential':'รหัสผ่านปัจจุบันไม่ถูกต้อง','auth/too-many-requests':'ลองผิดหลายครั้ง กรุณารอสักครู่','auth/weak-password':'รหัสผ่านใหม่ไม่ปลอดภัยพอ'};
+    showErr('toastPassErr',m[e.code]||e.message);
   }
+  btn.innerHTML='🔐 เปลี่ยนรหัสผ่าน';btn.disabled=false;
+}
 
-  // ── HELPERS ──
-  function updateCharCount() {
-    const v = document.getElementById('bioField').value;
-    document.getElementById('bioCount').textContent = v.length;
-  }
-  function updateBadges() {
-    const dept = document.getElementById('deptField').value;
-    const pos  = document.getElementById('posField').value.trim();
-    const db   = document.getElementById('deptBadge');
-    const pb   = document.getElementById('posBadge');
-    if (dept) { db.textContent = '🏢 ' + dept; db.style.display = 'inline-flex'; } else { db.style.display = 'none'; }
-    if (pos)  { pb.textContent = '💼 ' + pos;  pb.style.display = 'inline-flex'; } else { pb.style.display = 'none'; }
-  }
-  function updateCompletion() {
-    const user = auth.currentUser;
-    const fields = [
-      () => !!document.getElementById('newName').value.trim(),
-      () => !!document.getElementById('bioField').value.trim(),
-      () => !!document.getElementById('birthdayField').value,
-      () => !!document.getElementById('genderField').value,
-      () => !!document.getElementById('deptField').value,
-      () => !!document.getElementById('posField').value.trim(),
-      () => !!document.getElementById('empIdField').value.trim(),
-      () => !!document.getElementById('phoneField').value.trim(),
-      () => !!document.getElementById('lineField').value.trim(),
-      () => user && !!localStorage.getItem('adv_avatar_' + user.uid),
-    ];
-    const done = fields.filter(f => { try { return f(); } catch(e){ return false; } }).length;
-    const pct  = Math.round((done / fields.length) * 100);
-    document.getElementById('pcPct').textContent  = pct + '%';
-    document.getElementById('pcFill').style.width = pct + '%';
-  }
+// ── LOGOUT ──
+async function doLogout() { await auth.signOut(); window.location.href='login.html'; }
 
-  function showOk(id)       { const el=document.getElementById(id); el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),3000); }
-  function showErr(id,msg)  { const el=document.getElementById(id); el.textContent='⚠️ '+msg; el.classList.add('show'); }
-  function hideToasts(s)    { ['toast'+s,'toast'+s+'Err'].forEach(id=>document.getElementById(id).classList.remove('show')); }
+// ── THEME ──
+const themeFab=document.getElementById('themeFab');
+function setTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  themeFab.textContent=t==='dark'?'☀️':'🌙';
+  localStorage.setItem('adv-theme',t);
+  setPref('theme',t);
+  updateThemeOpts();
+}
+function toggleTheme(){setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');}
+function updateThemeOpts(){
+  const t=document.documentElement.getAttribute('data-theme');
+  document.getElementById('optLight').classList.toggle('active',t==='light');
+  document.getElementById('optDark').classList.toggle('active',t==='dark');
+}
+(function(){
+  const s=localStorage.getItem('adv-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+  document.documentElement.setAttribute('data-theme',s);
+  themeFab.textContent=s==='dark'?'☀️':'🌙';
+  updateThemeOpts();
+}());
 
-  // ── THEME ──
-  const themeBtn = document.getElementById('themeBtn');
-  function setTheme(t){document.documentElement.setAttribute('data-theme',t);themeBtn.textContent=t==='dark'?'☀️':'🌙';localStorage.setItem('adv-theme',t);}
-  function toggleTheme(){setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');}
-  (function(){setTheme(localStorage.getItem('adv-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));})();
+// ── TOAST HELPERS ──
+function showOk(id){const el=document.getElementById(id);el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3000);}
+function showErr(id,msg){const el=document.getElementById(id);el.textContent='⚠️ '+msg;el.classList.add('show');}
+function hideAll(s){['toast'+s,'toast'+s+'Err'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('show');});}
 </script>
 </body>
 </html>
