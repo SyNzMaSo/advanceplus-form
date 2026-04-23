@@ -111,6 +111,7 @@
     <div class="footer-note">© 2026 Advance Plus · ระบบสำหรับพนักงานเท่านั้น</div>
   </div>
 
+  <script src="theme.js"></script>
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -123,7 +124,9 @@
       messagingSenderId: "130477031774",
       appId: "1:130477031774:web:09345e091812be63d04fcf"
     };
-    firebase.initializeApp(firebaseConfig);
+    // Apply saved theme
+  if(typeof THEME !== 'undefined') THEME.apply();
+  firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
     // If already logged in → go to index
