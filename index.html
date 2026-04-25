@@ -262,6 +262,7 @@
 <div class="topbar">
   <img src="img/logo.png" alt="logo" class="topbar-logo" onerror="this.style.display='none'">
   <span class="topbar-title">Advance Plus</span>
+  <a href="multi.html" class="topbar-user" style="background:rgba(56,192,102,.2);border-color:rgba(56,192,102,.4);">📋 หลายราย</a>
   <a href="profile.html" class="topbar-user" id="userNameBadge">👤 ...</a>
   <button class="btn-logout" onclick="doLogout()">ออกจากระบบ</button>
 </div>
@@ -269,7 +270,7 @@
 <div class="banner">
   <div class="banner-photo"></div>
   <div class="banner-logo">
-    <img src="img/logo.png" style="width:100px; height:auto;">
+    <img src="img/logo.png" style="width: 100px; height: auto;">
   </div>
   <h1>กรอกข้อมูลลูกค้า</h1>
   <div class="banner-sub">Green Energy Customer Service</div>
@@ -551,11 +552,19 @@ function resetForm() {
 }
 
 // ─── SUBMIT ───
+// ══ DUPLICATE GUARD ══
+// 1) isSubmitting flag — บล็อกทันทีที่กดปุ่ม
+// 2) lastSubmitKey — ตรวจ payload hash เพื่อกัน retry ที่ส่งซ้ำ
+let _isSubmitting = false;
+let _lastSubmitKey = '';
+let _lastSubmitTime = 0;
+
 async function handleSubmit() {
+  if (_isSubmitting) return;          // 🔒 block ทันที
+
   const btn=document.getElementById('submitBtn');
   const toast=document.getElementById('toast');
   const toastErr=document.getElementById('toastErr');
-  if(btn.disabled) return;
 
   const prefix   = document.getElementById('f_phone_prefix').value;
   const rawPhone = document.getElementById('f_phone').value.trim();
@@ -571,6 +580,7 @@ async function handleSubmit() {
     result:   document.getElementById('f_result').value,
   };
 
+  // ── Validate ──
   let ok=true;
   if(!v.name)    {showErr('f_name','err_name');ok=false;}    else hideErr('f_name','err_name');
   if(!rawPhone||rawPhone.length!==10){
@@ -586,29 +596,63 @@ async function handleSubmit() {
 
   if(!ok){btn.style.animation='none';btn.offsetHeight;btn.style.animation='shake .4s ease';return;}
 
+  // ── Duplicate payload check (same data within 10s = skip) ──
+  const submitKey = [v.name,v.phone,v.type,v.problem,v.action].join('|');
+  const now = Date.now();
+  if (submitKey === _lastSubmitKey && (now - _lastSubmitTime) < 10000) {
+    // Show toast but don't re-send
+    toast.style.display='block';
+    document.getElementById('toastDetail').innerHTML='⚠️ ข้อมูลนี้เพิ่งถูกส่งไปแล้ว กรุณารอสักครู่';
+    return;
+  }
+
+  // ── LOCK ──
+  _isSubmitting   = true;
+  _lastSubmitKey  = submitKey;
+  _lastSubmitTime = now;
   btn.innerHTML='<span class="spinner"></span>กำลังส่ง...';
-  btn.disabled=true; toast.style.display='none'; toastErr.classList.remove('show');
+  btn.disabled=true;
+  toast.style.display='none';
+  toastErr.classList.remove('show');
 
   try {
-    await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(v),mode:'no-cors'});
+    await fetch(APPS_SCRIPT_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(v),
+      mode:'no-cors'
+    });
+
     toast.style.display='block';
     document.getElementById('toastDetail').innerHTML=
       '<b>ชื่อ:</b> '+v.name+' &nbsp;|&nbsp; <b>ประเภท:</b> '+v.type+
       ' &nbsp;|&nbsp; <b>สถานะ:</b> '+v.progress+
       (v.result?' &nbsp;|&nbsp; <b>ผล:</b> '+v.result:'')+
       '<br>📌 บันทึกลง DATA + ชีต '+v.type;
+
     btn.innerHTML='✓&nbsp; ส่งข้อมูลแล้ว';
     btn.style.background='linear-gradient(135deg,#0a4a1e,#157535)';
-    setTimeout(()=>{resetForm();btn.innerHTML='✦&nbsp; ส่งข้อมูล';btn.style.background='';btn.disabled=false;toast.style.display='none';},3500);
+
+    setTimeout(()=>{
+      resetForm();
+      btn.innerHTML='✦&nbsp; ส่งข้อมูล';
+      btn.style.background='';
+      btn.disabled=false;
+      toast.style.display='none';
+      _isSubmitting = false;   // 🔓 unlock หลัง reset เท่านั้น
+    }, 3500);
+
   } catch(err) {
     toastErr.classList.add('show');
     document.getElementById('toastErrMsg').textContent='ตรวจสอบ URL: '+err.message;
     btn.innerHTML='⚠ ลองใหม่อีกครั้ง';
     btn.style.background='linear-gradient(135deg,#9a2020,#c43030)';
     btn.disabled=false;
+    _isSubmitting = false;   // 🔓 unlock เมื่อ error
     setTimeout(()=>{btn.innerHTML='✦&nbsp; ส่งข้อมูล';btn.style.background='';},3000);
   }
 }
+
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')handleSubmit();});
 </script>
 
