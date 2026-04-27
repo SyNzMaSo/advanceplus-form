@@ -255,6 +255,225 @@
     }
     .btn-logout:hover{background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.6);}
 
+
+    /* ════════════════════════════════════════
+       CUSTOMIZE PANEL — slide-in from right
+    ════════════════════════════════════════ */
+    .cz-fab {
+      position:fixed; bottom:1.6rem; right:1.6rem; z-index:1000;
+      width:50px; height:50px; border-radius:50%; border:none; cursor:pointer;
+      background:linear-gradient(135deg,var(--g-dk),var(--g-md));
+      color:#fff; font-size:1.25rem;
+      display:grid; place-items:center;
+      box-shadow:0 4px 18px rgba(22,101,52,.38);
+      transition:transform .3s cubic-bezier(.34,1.56,.64,1), box-shadow .3s;
+    }
+    .cz-fab:hover { transform:scale(1.12) rotate(15deg); }
+    .cz-fab.open  { border-radius:14px; transform:rotate(45deg) scale(1.05); }
+
+    .cz-overlay {
+      position:fixed; inset:0; z-index:1001;
+      background:rgba(0,0,0,.35); backdrop-filter:blur(3px);
+      opacity:0; pointer-events:none; transition:opacity .3s;
+    }
+    .cz-overlay.open { opacity:1; pointer-events:all; }
+
+    .cz-panel {
+      position:fixed; top:0; right:0; bottom:0; z-index:1002;
+      width:min(340px, 90vw);
+      background:var(--card-bg, #fff);
+      border-left:1px solid var(--sec-div, #dcfce7);
+      box-shadow:-8px 0 40px rgba(0,0,0,.18);
+      display:flex; flex-direction:column;
+      transform:translateX(100%);
+      transition:transform .35s cubic-bezier(.22,.68,0,1.15);
+      overflow:hidden;
+    }
+    [data-theme="dark"] .cz-panel {
+      background:#234535;
+      border-left-color:rgba(110,231,183,.2);
+    }
+    .cz-panel.open { transform:translateX(0); }
+
+    /* Panel header */
+    .cz-header {
+      padding:1rem 1.2rem .8rem;
+      background:linear-gradient(135deg,var(--g-dk),var(--g-md));
+      display:flex; align-items:center; gap:.6rem; flex-shrink:0;
+    }
+    .cz-header h2 { font-size:.95rem; font-weight:800; color:#fff; flex:1; letter-spacing:.03em; }
+    .cz-close {
+      width:30px; height:30px; border-radius:8px; border:none; cursor:pointer;
+      background:rgba(255,255,255,.2); color:#fff; font-size:1rem;
+      display:grid; place-items:center; transition:background .2s;
+    }
+    .cz-close:hover { background:rgba(255,255,255,.35); }
+
+    /* Tab bar */
+    .cz-tabs {
+      display:flex; border-bottom:1px solid var(--sec-div, #dcfce7);
+      flex-shrink:0; background:var(--card-bg,#fff);
+    }
+    [data-theme="dark"] .cz-tabs { background:#234535; }
+    .cz-tab {
+      flex:1; padding:.6rem .3rem; font-size:.7rem; font-weight:700;
+      letter-spacing:.05em; text-transform:uppercase; text-align:center;
+      cursor:pointer; border:none; background:none;
+      color:var(--txt-dim,#86efac); font-family:'Kanit',sans-serif;
+      border-bottom:2px solid transparent; transition:all .2s;
+    }
+    .cz-tab.active { color:var(--g-md,#16a34a); border-bottom-color:var(--g-md,#16a34a); }
+
+    /* Tab content */
+    .cz-body { flex:1; overflow-y:auto; padding:.9rem 1.1rem; }
+    .cz-body::-webkit-scrollbar { width:4px; }
+    .cz-body::-webkit-scrollbar-thumb { background:var(--sec-div,#dcfce7); border-radius:2px; }
+    .cz-pane { display:none; }
+    .cz-pane.active { display:block; }
+
+    .cz-group { margin-bottom:1.1rem; }
+    .cz-label {
+      font-size:.7rem; font-weight:700; letter-spacing:.08em;
+      text-transform:uppercase; color:var(--g-md,#16a34a);
+      margin-bottom:.55rem; display:block;
+    }
+    .cz-hint { font-size:.68rem; color:var(--txt-dim,#86efac); margin-top:.2rem; opacity:.8; }
+
+    /* Color swatches */
+    .cz-swatches { display:flex; flex-wrap:wrap; gap:.38rem; }
+    .cz-swatch {
+      width:26px; height:26px; border-radius:50%; cursor:pointer;
+      border:2.5px solid transparent;
+      transition:transform .18s, border-color .18s, box-shadow .18s;
+    }
+    .cz-swatch:hover { transform:scale(1.2); }
+    .cz-swatch.active { border-color:#fff; box-shadow:0 0 0 2.5px var(--g-md); }
+    .cz-custom-color {
+      width:26px; height:26px; border-radius:50%;
+      border:2px dashed var(--sec-div,#dcfce7);
+      background:var(--inp-bg,#f0fdf4);
+      display:grid; place-items:center; cursor:pointer;
+      font-size:.75rem; overflow:hidden; position:relative;
+      transition:all .2s;
+    }
+    .cz-custom-color:hover { border-style:solid; }
+    .cz-custom-color input[type=color] {
+      position:absolute; width:200%; height:200%; top:-50%; left:-50%;
+      opacity:0; cursor:pointer; border:none; padding:0;
+    }
+
+    /* Mode cards */
+    .cz-mode-row { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; }
+    .cz-mode {
+      padding:.65rem .5rem; border-radius:11px; border:2px solid var(--sec-div,#dcfce7);
+      cursor:pointer; text-align:center; background:var(--inp-bg,#f0fdf4);
+      transition:all .2s;
+    }
+    .cz-mode:hover { border-color:var(--g-lt,#22c55e); }
+    .cz-mode.active { border-color:var(--g-md,#16a34a); background:var(--accent-xlt,#dcfce7); }
+    .cz-mode .icon { font-size:1.3rem; display:block; margin-bottom:.25rem; }
+    .cz-mode .lbl { font-size:.75rem; font-weight:700; color:var(--txt-md,#166534); }
+
+    /* Style options */
+    .cz-style-row { display:grid; grid-template-columns:repeat(3,1fr); gap:.4rem; }
+    .cz-style {
+      padding:.6rem .3rem; border-radius:10px; border:2px solid var(--sec-div,#dcfce7);
+      cursor:pointer; text-align:center; background:var(--inp-bg,#f0fdf4);
+      transition:all .2s;
+    }
+    .cz-style:hover { border-color:var(--g-lt,#22c55e); }
+    .cz-style.active { border-color:var(--g-md,#16a34a); background:var(--accent-xlt,#dcfce7); }
+    .cz-style .icon { font-size:1rem; display:block; margin-bottom:.2rem; }
+    .cz-style .lbl { font-size:.65rem; font-weight:700; color:var(--txt-md,#166534); }
+
+    /* Gradient builder */
+    .cz-grad-preview {
+      width:100%; height:34px; border-radius:8px;
+      border:1.5px solid var(--sec-div,#dcfce7); margin-bottom:.55rem;
+    }
+    .cz-color-row { display:flex; gap:.5rem; align-items:center; margin-bottom:.45rem; }
+    .cz-color-box {
+      width:32px; height:32px; border-radius:8px;
+      border:1.5px solid var(--sec-div,#dcfce7);
+      overflow:hidden; position:relative; cursor:pointer; flex-shrink:0;
+    }
+    .cz-color-box input[type=color] {
+      position:absolute; width:200%; height:200%; top:-50%; left:-50%;
+      opacity:0; cursor:pointer; border:none; padding:0;
+    }
+    .cz-color-lbl { font-size:.72rem; color:var(--txt-dim,#86efac); }
+
+    /* Sliders */
+    .cz-slider-row { display:flex; align-items:center; gap:.6rem; margin-bottom:.4rem; }
+    .cz-slider-row input[type=range] {
+      flex:1; height:5px; border-radius:3px;
+      background:var(--sec-div,#dcfce7); accent-color:var(--g-md,#16a34a);
+      border:none; padding:0; outline:none; cursor:pointer;
+    }
+    .cz-val { font-size:.8rem; font-weight:700; color:var(--g-md,#16a34a); min-width:38px; text-align:right; }
+
+    /* Preset buttons */
+    .cz-presets { display:flex; flex-wrap:wrap; gap:.35rem; }
+    .cz-preset {
+      font-size:.65rem; font-weight:700; padding:.22rem .55rem;
+      border-radius:20px; border:1.5px solid var(--sec-div,#dcfce7);
+      background:var(--inp-bg,#f0fdf4); color:var(--txt-md,#166534);
+      cursor:pointer; transition:all .18s; white-space:nowrap;
+    }
+    .cz-preset:hover { border-color:var(--g-lt,#22c55e); background:var(--accent-xlt,#dcfce7); }
+
+    /* Pattern */
+    .cz-pattern-row { display:grid; grid-template-columns:repeat(4,1fr); gap:.35rem; }
+    .cz-pat {
+      padding:.5rem .2rem; border-radius:9px; border:2px solid var(--sec-div,#dcfce7);
+      cursor:pointer; text-align:center; background:var(--inp-bg,#f0fdf4);
+      transition:all .18s; font-size:.8rem;
+    }
+    .cz-pat:hover { border-color:var(--g-lt,#22c55e); }
+    .cz-pat.active { border-color:var(--g-md,#16a34a); background:var(--accent-xlt,#dcfce7); }
+    .cz-pat .lbl { font-size:.6rem; font-weight:700; color:var(--txt-md,#166534); margin-top:.15rem; }
+
+    /* Text edit fields */
+    .cz-input {
+      width:100%; background:var(--inp-bg,#f0fdf4);
+      border:1.5px solid var(--sec-div,#dcfce7); border-radius:9px;
+      color:var(--txt,#14532d); font-family:'Kanit',sans-serif;
+      font-size:.85rem; padding:.55rem .8rem; outline:none;
+      transition:border .2s, box-shadow .2s;
+    }
+    .cz-input:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.14); }
+    [data-theme="dark"] .cz-input { color:#ecfdf5; }
+
+    /* Save bar */
+    .cz-footer {
+      padding:.8rem 1.1rem; border-top:1px solid var(--sec-div,#dcfce7);
+      display:flex; gap:.5rem; flex-shrink:0;
+      background:var(--card-bg,#fff);
+    }
+    [data-theme="dark"] .cz-footer { background:#234535; }
+    .cz-btn-save {
+      flex:1; height:40px;
+      background:linear-gradient(135deg,var(--g-dk,#14532d),var(--g-md,#16a34a) 55%,var(--g-lt,#22c55e));
+      border:none; border-radius:10px; color:#fff;
+      font-family:'Kanit',sans-serif; font-size:.88rem; font-weight:700;
+      cursor:pointer; transition:transform .2s, box-shadow .2s;
+    }
+    .cz-btn-save:hover { transform:translateY(-1px); box-shadow:0 4px 14px rgba(22,101,52,.28); }
+    .cz-btn-reset {
+      height:40px; padding:0 .9rem; border-radius:10px;
+      border:1.5px solid var(--sec-div,#dcfce7);
+      background:var(--inp-bg,#f0fdf4); color:var(--txt-dim,#86efac);
+      font-family:'Kanit',sans-serif; font-size:.82rem; font-weight:700;
+      cursor:pointer; transition:all .2s;
+    }
+    .cz-btn-reset:hover { color:var(--red,#dc2626); border-color:var(--red,#dc2626); }
+    .cz-saved-toast {
+      display:none; text-align:center; font-size:.72rem; color:var(--g-md,#16a34a);
+      padding:.3rem; animation:popIn .3s ease;
+    }
+    .cz-saved-toast.show { display:block; }
+    @keyframes popIn { from{opacity:0;transform:scale(.95);}to{opacity:1;transform:scale(1);} }
+
   </style>
 </head>
 <body>
@@ -289,7 +508,7 @@
 
       <div class="row-2">
         <div class="fg">
-          <label for="f_name">ชื่อ <span class="req">*</span></label>
+          <label for="f_name"><span id="fLblName">ชื่อ</span> <span class="req">*</span></label>
           <div class="input-wrap">
             <svg class="input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
             <input type="text" id="f_name" placeholder="ชื่อลูกค้า" autocomplete="off">
@@ -299,7 +518,7 @@
 
         <!-- เบอร์โทร + prefix select (native แต่สะอาด) -->
         <div class="fg">
-          <label>เบอร์โทรศัพท์ <span class="req">*</span></label>
+          <label><span id="fLblPhone">เบอร์โทรศัพท์</span> <span class="req">*</span></label>
           <div class="phone-row">
             <select id="f_phone_prefix" class="phone-pre">
               <option value="">—</option>
@@ -353,7 +572,7 @@
         <span class="sec-title">รายละเอียดงาน</span><span class="sec-num">2 / 3</span>
       </div>
       <div class="fg">
-        <label for="f_problem">ปัญหา <span class="req">*</span></label>
+        <label for="f_problem"><span id="fLblProblem">ปัญหา</span> <span class="req">*</span></label>
         <div class="input-wrap">
           <svg class="input-icon top" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <textarea id="f_problem" placeholder="อธิบายปัญหาของลูกค้า..." rows="3" oninput="countChars('f_problem','cc_problem',200)"></textarea>
@@ -378,7 +597,7 @@
         <div class="err-msg" id="err_progress"><svg width="10" height="10" viewBox="0 0 24 24" fill="var(--red)"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16v.5" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>กรุณาเลือกสถานะ</div>
       </div>
       <div class="fg">
-        <label for="f_action">การดำเนินการ <span class="req">*</span></label>
+        <label for="f_action"><span id="fLblAction">การดำเนินการ</span> <span class="req">*</span></label>
         <div class="input-wrap">
           <svg class="input-icon top" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
           <textarea id="f_action" placeholder="อธิบายสิ่งที่ดำเนินการไปแล้ว..." rows="3" oninput="countChars('f_action','cc_action',300)"></textarea>
@@ -684,6 +903,488 @@ document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Ente
       auth.signOut().then(() => window.location.href = 'login.html');
     }
   </script>
+
+
+<!-- ════ CUSTOMIZE PANEL ════ -->
+<div class="cz-overlay" id="czOverlay" onclick="closeCZ()"></div>
+<div class="cz-panel" id="czPanel">
+  <div class="cz-header">
+    <span style="font-size:1.1rem;">🎨</span>
+    <h2>ตกแต่งแบบฟอร์ม</h2>
+    <button class="cz-close" onclick="closeCZ()">✕</button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="cz-tabs">
+    <button class="cz-tab active" onclick="czTab('colors')">🎨 สี</button>
+    <button class="cz-tab" onclick="czTab('bg')">🖼 พื้นหลัง</button>
+    <button class="cz-tab" onclick="czTab('form')">📝 ฟอร์ม</button>
+    <button class="cz-tab" onclick="czTab('text')">✏️ ข้อความ</button>
+  </div>
+
+  <div class="cz-body">
+
+    <!-- ── TAB: สี ── -->
+    <div class="cz-pane active" id="czPane-colors">
+      <div class="cz-group">
+        <span class="cz-label">โหมด</span>
+        <div class="cz-mode-row">
+          <div class="cz-mode active" id="czLight" onclick="czMode('light')">
+            <span class="icon">☀️</span><div class="lbl">สว่าง</div>
+          </div>
+          <div class="cz-mode" id="czDark" onclick="czMode('dark')">
+            <span class="icon">🌙</span><div class="lbl">มืด</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cz-group">
+        <span class="cz-label">สีหลัก (Accent)</span>
+        <div class="cz-swatches" id="czAccents">
+          <div class="cz-swatch active" data-c="#16a34a" style="background:#16a34a" onclick="czAccent('#16a34a',this)"></div>
+          <div class="cz-swatch" data-c="#2563eb" style="background:#2563eb" onclick="czAccent('#2563eb',this)"></div>
+          <div class="cz-swatch" data-c="#7c3aed" style="background:#7c3aed" onclick="czAccent('#7c3aed',this)"></div>
+          <div class="cz-swatch" data-c="#db2777" style="background:#db2777" onclick="czAccent('#db2777',this)"></div>
+          <div class="cz-swatch" data-c="#ea580c" style="background:#ea580c" onclick="czAccent('#ea580c',this)"></div>
+          <div class="cz-swatch" data-c="#0891b2" style="background:#0891b2" onclick="czAccent('#0891b2',this)"></div>
+          <div class="cz-swatch" data-c="#65a30d" style="background:#65a30d" onclick="czAccent('#65a30d',this)"></div>
+          <div class="cz-swatch" data-c="#be123c" style="background:#be123c" onclick="czAccent('#be123c',this)"></div>
+          <div class="cz-swatch" data-c="#0f766e" style="background:#0f766e" onclick="czAccent('#0f766e',this)"></div>
+          <div class="cz-swatch" data-c="#b45309" style="background:#b45309" onclick="czAccent('#b45309',this)"></div>
+          <div class="cz-swatch" data-c="#475569" style="background:#475569" onclick="czAccent('#475569',this)"></div>
+          <div class="cz-swatch" data-c="#0d9488" style="background:#0d9488" onclick="czAccent('#0d9488',this)"></div>
+          <div class="cz-custom-color" title="สีเอง">🎨<input type="color" value="#16a34a" oninput="czAccent(this.value,null)"></div>
+        </div>
+      </div>
+
+      <div class="cz-group">
+        <span class="cz-label">สไตล์การ์ด</span>
+        <div class="cz-style-row">
+          <div class="cz-style active" id="czCard-solid" onclick="czCardStyle('solid')">
+            <span class="icon">⬜</span><div class="lbl">ปกติ</div>
+          </div>
+          <div class="cz-style" id="czCard-glass" onclick="czCardStyle('glass')">
+            <span class="icon">🔮</span><div class="lbl">แก้ว</div>
+          </div>
+          <div class="cz-style" id="czCard-flat" onclick="czCardStyle('flat')">
+            <span class="icon">📄</span><div class="lbl">เรียบ</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cz-group">
+        <span class="cz-label">ขนาดตัวอักษร</span>
+        <div class="cz-slider-row">
+          <span style="font-size:.72rem;color:var(--txt-dim)">A</span>
+          <input type="range" id="czFont" min="12" max="18" value="14" step="1" oninput="czLiveFont(this.value)">
+          <span style="font-size:.95rem;color:var(--txt-dim)">A</span>
+          <span class="cz-val" id="czFontVal">14px</span>
+        </div>
+      </div>
+
+      <div class="cz-group">
+        <span class="cz-label">ความโค้งมนกล่อง</span>
+        <div class="cz-slider-row">
+          <span style="font-size:.72rem;color:var(--txt-dim)">▢</span>
+          <input type="range" id="czRadius" min="4" max="22" value="10" step="2" oninput="czLiveRadius(this.value)">
+          <span style="font-size:.72rem;color:var(--txt-dim)">◯</span>
+          <span class="cz-val" id="czRadiusVal">10px</span>
+        </div>
+      </div>
+
+      <div class="cz-group">
+        <span class="cz-label">ความเข้มเงา</span>
+        <div class="cz-slider-row">
+          <span style="font-size:.72rem;color:var(--txt-dim)">🌑</span>
+          <input type="range" id="czShadow" min="0" max="25" value="10" step="1" oninput="czLiveShadow(this.value)">
+          <span style="font-size:.72rem;color:var(--txt-dim)">☁️</span>
+          <span class="cz-val" id="czShadowVal">10</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: พื้นหลัง ── -->
+    <div class="cz-pane" id="czPane-bg">
+      <div class="cz-group">
+        <span class="cz-label">พรีเซ็ตพื้นหลัง</span>
+        <div class="cz-presets">
+          <div class="cz-preset" onclick="czPreset('green')">🌿 เขียว</div>
+          <div class="cz-preset" onclick="czPreset('ocean')">🌊 ทะเล</div>
+          <div class="cz-preset" onclick="czPreset('sunset')">🌅 ตะวัน</div>
+          <div class="cz-preset" onclick="czPreset('lavender')">💜 ม่วง</div>
+          <div class="cz-preset" onclick="czPreset('candy')">🍬 แคนดี้</div>
+          <div class="cz-preset" onclick="czPreset('midnight')">🌌 กลางคืน</div>
+          <div class="cz-preset" onclick="czPreset('sand')">🏖️ ทราย</div>
+          <div class="cz-preset" onclick="czPreset('cherry')">🌸 ซากุระ</div>
+          <div class="cz-preset" onclick="czPreset('forest')">🌲 ป่าไม้</div>
+          <div class="cz-preset" onclick="czPreset('sky')">☁️ ท้องฟ้า</div>
+          <div class="cz-preset" onclick="czPreset('rose')">🌹 กุหลาบ</div>
+          <div class="cz-preset" onclick="czPreset('mint')">🍃 มิ้นต์</div>
+        </div>
+      </div>
+
+      <div class="cz-group">
+        <span class="cz-label">สร้างสีเอง</span>
+        <div id="czGradPreview" class="cz-grad-preview"></div>
+        <div class="cz-color-row">
+          <div class="cz-color-box" style="background:#bbf7d0">
+            <input type="color" id="czBg1" value="#bbf7d0" oninput="czUpdateGrad()">
+          </div>
+          <span class="cz-color-lbl">สีเริ่มต้น</span>
+        </div>
+        <div class="cz-color-row">
+          <div class="cz-color-box" style="background:#dcfce7">
+            <input type="color" id="czBgMid" value="#dcfce7" oninput="czUpdateGrad()">
+          </div>
+          <span class="cz-color-lbl">สีกลาง</span>
+        </div>
+        <div class="cz-color-row">
+          <div class="cz-color-box" style="background:#f0fdf4">
+            <input type="color" id="czBg2" value="#f0fdf4" oninput="czUpdateGrad()">
+          </div>
+          <span class="cz-color-lbl">สีสุดท้าย</span>
+        </div>
+        <span class="cz-label" style="margin-top:.55rem;">มุมไล่สี</span>
+        <div class="cz-slider-row">
+          <span style="font-size:.7rem;color:var(--txt-dim)">0°</span>
+          <input type="range" id="czAngle" min="0" max="360" value="150" step="5" oninput="czUpdateGrad()">
+          <span style="font-size:.7rem;color:var(--txt-dim)">360°</span>
+          <span class="cz-val" id="czAngleVal">150°</span>
+        </div>
+      </div>
+
+      <div class="cz-group">
+        <span class="cz-label">ลายพื้นหลัง</span>
+        <div class="cz-pattern-row">
+          <div class="cz-pat active" id="czPat-none" onclick="czPattern('none')"><span>✖</span><div class="lbl">ไม่มี</div></div>
+          <div class="cz-pat" id="czPat-dots" onclick="czPattern('dots')"><span>•••</span><div class="lbl">จุด</div></div>
+          <div class="cz-pat" id="czPat-grid" onclick="czPattern('grid')"><span>⊞</span><div class="lbl">ตาราง</div></div>
+          <div class="cz-pat" id="czPat-diagonal" onclick="czPattern('diagonal')"><span>╱╱</span><div class="lbl">ทแยง</div></div>
+          <div class="cz-pat" id="czPat-waves" onclick="czPattern('waves')"><span>〰</span><div class="lbl">คลื่น</div></div>
+          <div class="cz-pat" id="czPat-hex" onclick="czPattern('hex')"><span>⬡</span><div class="lbl">หกเหลี่ยม</div></div>
+          <div class="cz-pat" id="czPat-cross" onclick="czPattern('cross')"><span>✚</span><div class="lbl">กากบาท</div></div>
+        </div>
+        <div class="cz-slider-row" style="margin-top:.5rem;">
+          <span style="font-size:.7rem;color:var(--txt-dim)">เบา</span>
+          <input type="range" id="czPatOpa" min="2" max="20" value="8" step="1" oninput="czLivePatOpa(this.value)">
+          <span style="font-size:.7rem;color:var(--txt-dim)">เข้ม</span>
+          <span class="cz-val" id="czPatOpaVal">8%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: ฟอร์ม ── -->
+    <div class="cz-pane" id="czPane-form">
+      <div class="cz-group">
+        <span class="cz-label">สีฟิลด์เมื่อกรอก</span>
+        <div class="cz-style-row" style="grid-template-columns:1fr 1fr;">
+          <div class="cz-style active" id="czField-blue" onclick="czFieldColor('blue')">
+            <span class="icon">🔵</span><div class="lbl">ฟ้า (default)</div>
+          </div>
+          <div class="cz-style" id="czField-rainbow" onclick="czFieldColor('rainbow')">
+            <span class="icon">🌈</span><div class="lbl">หลากสี</div>
+          </div>
+          <div class="cz-style" id="czField-accent" onclick="czFieldColor('accent')">
+            <span class="icon">🎨</span><div class="lbl">ตามสีหลัก</div>
+          </div>
+          <div class="cz-style" id="czField-mono" onclick="czFieldColor('mono')">
+            <span class="icon">⬜</span><div class="lbl">เรียบ</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cz-group">
+        <span class="cz-label">สถานะ Banner</span>
+        <div class="cz-style-row" style="grid-template-columns:1fr 1fr;">
+          <div class="cz-style active" id="czBanner-photo" onclick="czBannerStyle('photo')">
+            <span class="icon">🏙</span><div class="lbl">รูปภาพ</div>
+          </div>
+          <div class="cz-style" id="czBanner-gradient" onclick="czBannerStyle('gradient')">
+            <span class="icon">🎨</span><div class="lbl">Gradient</div>
+          </div>
+          <div class="cz-style" id="czBanner-minimal" onclick="czBannerStyle('minimal')">
+            <span class="icon">✦</span><div class="lbl">เรียบ</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cz-group">
+        <span class="cz-label">ความสูง Banner</span>
+        <div class="cz-slider-row">
+          <span style="font-size:.7rem;color:var(--txt-dim)">เตี้ย</span>
+          <input type="range" id="czBannerH" min="80" max="280" value="160" step="10" oninput="czLiveBannerH(this.value)">
+          <span style="font-size:.7rem;color:var(--txt-dim)">สูง</span>
+          <span class="cz-val" id="czBannerHVal">160px</span>
+        </div>
+      </div>
+
+      <div class="cz-group">
+        <span class="cz-label">ความเข้ม Overlay</span>
+        <div class="cz-slider-row">
+          <span style="font-size:.7rem;color:var(--txt-dim)">โปร่ง</span>
+          <input type="range" id="czOverlayOpa" min="20" max="95" value="65" step="5" oninput="czLiveOverlay(this.value)">
+          <span style="font-size:.7rem;color:var(--txt-dim)">เข้ม</span>
+          <span class="cz-val" id="czOverlayVal">65%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: ข้อความ ── -->
+    <div class="cz-pane" id="czPane-text">
+      <div class="cz-group">
+        <span class="cz-label">หัวข้อฟอร์ม</span>
+        <input type="text" class="cz-input" id="czTitle" value="กรอกข้อมูลลูกค้า" oninput="czLiveTitle(this.value)">
+      </div>
+      <div class="cz-group">
+        <span class="cz-label">ข้อความรอง</span>
+        <input type="text" class="cz-input" id="czSubtitle" value="Green Energy Customer Service" oninput="czLiveSubtitle(this.value)">
+      </div>
+      <div class="cz-group">
+        <span class="cz-label">Label ชื่อ</span>
+        <input type="text" class="cz-input" id="czLabelName" value="ชื่อ" oninput="czLiveLabel('fLblName',this.value)">
+      </div>
+      <div class="cz-group">
+        <span class="cz-label">Label เบอร์โทร</span>
+        <input type="text" class="cz-input" id="czLabelPhone" value="เบอร์โทรศัพท์" oninput="czLiveLabel('fLblPhone',this.value)">
+      </div>
+      <div class="cz-group">
+        <span class="cz-label">Label ปัญหา</span>
+        <input type="text" class="cz-input" id="czLabelProblem" value="ปัญหา" oninput="czLiveLabel('fLblProblem',this.value)">
+      </div>
+      <div class="cz-group">
+        <span class="cz-label">Label การดำเนินการ</span>
+        <input type="text" class="cz-input" id="czLabelAction" value="การดำเนินการ" oninput="czLiveLabel('fLblAction',this.value)">
+      </div>
+      <p class="cz-hint">* เปลี่ยนข้อความได้เลย จะแสดงทันทีในฟอร์ม</p>
+    </div>
+
+  </div><!-- /cz-body -->
+
+  <div class="cz-footer">
+    <button class="cz-btn-save" onclick="czSaveAll()">💾 บันทึกทั้งหมด</button>
+    <button class="cz-btn-reset" onclick="czResetAll()">↺</button>
+  </div>
+  <div class="cz-saved-toast" id="czSavedToast">✅ บันทึกแล้ว!</div>
+</div>
+
+<!-- FAB -->
+<button class="cz-fab" id="czFab" onclick="toggleCZ()">🎨</button>
+
+
+<script>
+/* ════ CUSTOMIZE PANEL JS ════ */
+let _czOpen = false;
+
+function toggleCZ() {
+  _czOpen = !_czOpen;
+  document.getElementById('czPanel').classList.toggle('open', _czOpen);
+  document.getElementById('czOverlay').classList.toggle('open', _czOpen);
+  document.getElementById('czFab').classList.toggle('open', _czOpen);
+  if (_czOpen) czSyncControls();
+}
+function closeCZ() {
+  _czOpen = false;
+  document.getElementById('czPanel').classList.remove('open');
+  document.getElementById('czOverlay').classList.remove('open');
+  document.getElementById('czFab').classList.remove('open');
+}
+
+function czTab(name) {
+  document.querySelectorAll('.cz-tab').forEach((t,i) => {
+    const names = ['colors','bg','form','text'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.cz-pane').forEach(p => {
+    p.classList.toggle('active', p.id === 'czPane-'+name);
+  });
+}
+
+/* ── Sync controls with saved theme ── */
+function czSyncControls() {
+  const m  = THEME.get('mode') || 'light';
+  const a  = THEME.get('accent') || '#16a34a';
+  const cs = THEME.get('cardStyle') || 'solid';
+  const fs = THEME.get('fontSize') || '14';
+  const r  = THEME.get('radius') || '10';
+  const sh = THEME.get('shadowInt') || '10';
+  const bg1= THEME.get('bg1') || '#bbf7d0';
+  const bg2= THEME.get('bg2') || '#f0fdf4';
+  const bgm= THEME.get('bgMid') || '#dcfce7';
+  const ang= THEME.get('bgAngle') || '150';
+  const pat= THEME.get('pattern') || 'none';
+  const po = THEME.get('patternOpa') || '8';
+  const fc = THEME.get('fieldColor') || 'blue';
+  const bs = THEME.get('bannerStyle') || 'photo';
+  const bh = THEME.get('bannerH') || '160';
+  const oo = THEME.get('overlayOpa') || '65';
+
+  // Mode
+  document.getElementById('czLight').classList.toggle('active', m==='light');
+  document.getElementById('czDark').classList.toggle('active',  m==='dark');
+  // Accent
+  document.querySelectorAll('#czAccents .cz-swatch').forEach(s => s.classList.toggle('active', s.dataset.c===a));
+  // Card style
+  document.querySelectorAll('[id^="czCard-"]').forEach(c => c.classList.toggle('active', c.id==='czCard-'+cs));
+  // Sliders
+  document.getElementById('czFont').value = fs;   document.getElementById('czFontVal').textContent = fs+'px';
+  document.getElementById('czRadius').value = r;  document.getElementById('czRadiusVal').textContent = r+'px';
+  document.getElementById('czShadow').value = sh; document.getElementById('czShadowVal').textContent = sh;
+  // BG
+  document.getElementById('czBg1').value = bg1;
+  document.getElementById('czBg2').value = bg2;
+  document.getElementById('czBgMid').value = bgm;
+  document.getElementById('czAngle').value = ang; document.getElementById('czAngleVal').textContent = ang+'°';
+  // Pattern
+  document.querySelectorAll('[id^="czPat-"]').forEach(c => c.classList.toggle('active', c.id==='czPat-'+pat));
+  document.getElementById('czPatOpa').value = po; document.getElementById('czPatOpaVal').textContent = po+'%';
+  // Field color
+  document.querySelectorAll('[id^="czField-"]').forEach(c => c.classList.toggle('active', c.id==='czField-'+fc));
+  // Banner
+  document.querySelectorAll('[id^="czBanner-"]').forEach(c => c.classList.toggle('active', c.id==='czBanner-'+bs));
+  document.getElementById('czBannerH').value = bh; document.getElementById('czBannerHVal').textContent = bh+'px';
+  document.getElementById('czOverlayOpa').value = oo; document.getElementById('czOverlayVal').textContent = oo+'%';
+  // Text labels
+  document.getElementById('czTitle').value    = localStorage.getItem('adv_form_title') || 'กรอกข้อมูลลูกค้า';
+  document.getElementById('czSubtitle').value = localStorage.getItem('adv_form_sub') || 'Green Energy Customer Service';
+  czUpdateGrad();
+}
+
+/* ── Color/Mode controls ── */
+function czMode(m)   { THEME.set('mode',m); THEME.apply(); document.getElementById('czLight').classList.toggle('active',m==='light'); document.getElementById('czDark').classList.toggle('active',m==='dark'); }
+function czAccent(c,el) { THEME.set('accent',c); THEME.apply(); document.querySelectorAll('#czAccents .cz-swatch').forEach(s=>s.classList.remove('active')); if(el)el.classList.add('active'); }
+function czCardStyle(s) { THEME.set('cardStyle',s); THEME.apply(); document.querySelectorAll('[id^="czCard-"]').forEach(c=>c.classList.toggle('active',c.id==='czCard-'+s)); }
+function czLiveFont(v)   { document.getElementById('czFontVal').textContent=v+'px'; THEME.set('fontSize',v); THEME.apply(); }
+function czLiveRadius(v) { document.getElementById('czRadiusVal').textContent=v+'px'; THEME.set('radius',v); THEME.apply(); }
+function czLiveShadow(v) { document.getElementById('czShadowVal').textContent=v; THEME.set('shadowInt',v); THEME.apply(); }
+
+/* ── Background ── */
+const CZ_PRESETS = {
+  green:   {bg1:'#bbf7d0',bgMid:'#dcfce7',bg2:'#f0fdf4',angle:'150'},
+  ocean:   {bg1:'#bae6fd',bgMid:'#e0f2fe',bg2:'#f0f9ff',angle:'135'},
+  sunset:  {bg1:'#fed7aa',bgMid:'#fde68a',bg2:'#fef3c7',angle:'160'},
+  lavender:{bg1:'#e9d5ff',bgMid:'#f3e8ff',bg2:'#faf5ff',angle:'140'},
+  candy:   {bg1:'#fbcfe8',bgMid:'#fce7f3',bg2:'#fdf4ff',angle:'125'},
+  midnight:{bg1:'#1e1b4b',bgMid:'#312e81',bg2:'#1e3a5f',angle:'145'},
+  sand:    {bg1:'#d6c5a0',bgMid:'#e8d9b8',bg2:'#f5edd6',angle:'155'},
+  cherry:  {bg1:'#fda4af',bgMid:'#fecdd3',bg2:'#fff1f2',angle:'140'},
+  forest:  {bg1:'#14532d',bgMid:'#15803d',bg2:'#166534',angle:'145'},
+  sky:     {bg1:'#e0f2fe',bgMid:'#bae6fd',bg2:'#f0f9ff',angle:'170'},
+  rose:    {bg1:'#ffe4e6',bgMid:'#fecdd3',bg2:'#fff1f2',angle:'135'},
+  mint:    {bg1:'#ccfbf1',bgMid:'#99f6e4',bg2:'#f0fdfa',angle:'150'},
+};
+function czPreset(name) {
+  const p = CZ_PRESETS[name]; if(!p) return;
+  THEME.set('bg1',p.bg1); THEME.set('bg2',p.bg2); THEME.set('bgMid',p.bgMid); THEME.set('bgAngle',p.angle);
+  document.getElementById('czBg1').value   = p.bg1;
+  document.getElementById('czBg2').value   = p.bg2;
+  document.getElementById('czBgMid').value = p.bgMid;
+  document.getElementById('czAngle').value = p.angle;
+  document.getElementById('czAngleVal').textContent = p.angle+'°';
+  czUpdateGrad(); THEME.apply();
+}
+function czUpdateGrad() {
+  const c1=document.getElementById('czBg1').value;
+  const cm=document.getElementById('czBgMid').value;
+  const c2=document.getElementById('czBg2').value;
+  const a =document.getElementById('czAngle').value;
+  document.getElementById('czAngleVal').textContent = a+'°';
+  document.getElementById('czGradPreview').style.background = `linear-gradient(${a}deg,${c1},${cm},${c2})`;
+  THEME.set('bg1',c1); THEME.set('bg2',c2); THEME.set('bgMid',cm); THEME.set('bgAngle',a);
+  THEME.apply();
+}
+function czPattern(p) {
+  THEME.set('pattern',p); THEME.apply();
+  document.querySelectorAll('[id^="czPat-"]').forEach(c=>c.classList.toggle('active',c.id==='czPat-'+p));
+}
+function czLivePatOpa(v) {
+  document.getElementById('czPatOpaVal').textContent=v+'%';
+  THEME.set('patternOpa',v); THEME.apply();
+}
+
+/* ── Field color ── */
+const FIELD_STYLES = {
+  blue: `input:focus,textarea:focus,select:focus{border-color:#3b82f6!important;box-shadow:0 0 0 3px rgba(59,130,246,.14)!important;background:rgba(239,246,255,.5)!important;}`,
+  rainbow: `#f_name:focus{border-color:#3b82f6!important;background:#eff6ff!important;}#f_phone:focus{border-color:#f97316!important;background:#fff8f0!important;}#f_type:focus{border-color:#8b5cf6!important;background:#f8f0ff!important;}#f_problem:focus{border-color:#ec4899!important;background:#fff0f8!important;}#f_progress:focus{border-color:#10b981!important;background:#f0fff8!important;}#f_action:focus{border-color:#eab308!important;background:#fffef0!important;}#f_result:focus{border-color:#06b6d4!important;background:#f0feff!important;}`,
+  accent: `input:focus,textarea:focus,select:focus{border-color:var(--g-md)!important;box-shadow:0 0 0 3px var(--accent-xlt)!important;background:var(--inp-bg)!important;}`,
+  mono: `input:focus,textarea:focus,select:focus{border-color:var(--border)!important;box-shadow:none!important;background:var(--inp-bg)!important;}`,
+};
+function czFieldColor(fc) {
+  THEME.set('fieldColor',fc);
+  let el = document.getElementById('adv-field-style');
+  if (!el) { el=document.createElement('style'); el.id='adv-field-style'; document.head.appendChild(el); }
+  el.textContent = FIELD_STYLES[fc] || FIELD_STYLES.blue;
+  document.querySelectorAll('[id^="czField-"]').forEach(c=>c.classList.toggle('active',c.id==='czField-'+fc));
+}
+
+/* ── Banner ── */
+function czBannerStyle(bs) {
+  THEME.set('bannerStyle',bs);
+  const banner = document.querySelector('.banner');
+  const photo  = document.querySelector('.banner-photo');
+  if (bs==='photo')    { if(photo) photo.style.display=''; banner.style.background=''; }
+  if (bs==='gradient') { if(photo) photo.style.display='none'; banner.style.background=`linear-gradient(135deg,var(--accent-dk),var(--g-md),var(--g-lt))`; }
+  if (bs==='minimal')  { if(photo) photo.style.display='none'; banner.style.background=`var(--accent-dk)`; }
+  document.querySelectorAll('[id^="czBanner-"]').forEach(c=>c.classList.toggle('active',c.id==='czBanner-'+bs));
+}
+function czLiveBannerH(v) {
+  document.getElementById('czBannerHVal').textContent=v+'px';
+  THEME.set('bannerH',v);
+  const b=document.querySelector('.banner'); if(b) b.style.paddingTop = (parseInt(v)/2)+'px';
+}
+function czLiveOverlay(v) {
+  document.getElementById('czOverlayVal').textContent=v+'%';
+  THEME.set('overlayOpa',v);
+  const op=parseFloat(v)/100;
+  let el=document.getElementById('adv-overlay-style');
+  if(!el){el=document.createElement('style');el.id='adv-overlay-style';document.head.appendChild(el);}
+  el.textContent=`.banner-photo::after{background:linear-gradient(180deg,rgba(0,30,10,${op*0.65}) 0%,rgba(0,45,15,${op*0.82}) 45%,rgba(0,28,8,${op}) 100%)!important;}`;
+}
+
+/* ── Text labels ── */
+function czLiveTitle(v)    { const el=document.querySelector('.banner h1');    if(el) el.textContent=v; localStorage.setItem('adv_form_title',v); }
+function czLiveSubtitle(v) { const el=document.querySelector('.banner-sub'); if(el) el.textContent=v; localStorage.setItem('adv_form_sub',v); }
+function czLiveLabel(id,v) { const el=document.getElementById(id); if(el) el.textContent=v; }
+
+/* ── Save all ── */
+function czSaveAll() {
+  const fc = THEME.get('fieldColor') || 'blue';
+  czFieldColor(fc);
+  THEME.apply();
+  const toast = document.getElementById('czSavedToast');
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'),2500);
+}
+
+/* ── Reset ── */
+function czResetAll() {
+  if (!confirm('รีเซ็ตทุกอย่างกลับค่าเริ่มต้น?')) return;
+  ['mode','bg1','bg2','bgMid','bgAngle','accent','cardStyle','fontSize','radius',
+   'shadowInt','pattern','patternOpa','fieldColor','bannerStyle','bannerH','overlayOpa']
+  .forEach(k=>localStorage.removeItem('adv_'+k));
+  ['adv_form_title','adv_form_sub'].forEach(k=>localStorage.removeItem(k));
+  location.reload();
+}
+
+/* Apply saved text on load */
+document.addEventListener('DOMContentLoaded', () => {
+  const t = localStorage.getItem('adv_form_title');
+  const s = localStorage.getItem('adv_form_sub');
+  if (t) { const el=document.querySelector('.banner h1'); if(el) el.textContent=t; }
+  if (s) { const el=document.querySelector('.banner-sub'); if(el) el.textContent=s; }
+  // Apply saved banner style
+  const bs = THEME.get('bannerStyle') || 'photo';
+  if (bs !== 'photo') czBannerStyle(bs);
+  // Apply saved banner height
+  const bh = THEME.get('bannerH') || '160';
+  if (bh !== '160') czLiveBannerH(bh);
+  // Apply saved overlay
+  const oo = THEME.get('overlayOpa') || '65';
+  if (oo !== '65') czLiveOverlay(oo);
+  // Apply saved field color
+  const fc = THEME.get('fieldColor') || 'blue';
+  czFieldColor(fc);
+});
+</script>
 
 </body>
 </html>
