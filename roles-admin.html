@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>จัดการสิทธิ์ — Advance Plus</title>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Kanit',sans-serif;background:#f4f6f8;min-height:100vh;color:#1a2e1a;}
+.topbar{display:flex;align-items:center;gap:.6rem;padding:.65rem 1.2rem;background:#fff;border-bottom:1px solid #d1e8d1;box-shadow:0 1px 4px rgba(0,0,0,.07);position:sticky;top:0;z-index:100;}
+.logo{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#14532d,#16a34a);display:grid;place-items:center;font-size:1rem;}
+.title{font-size:.9rem;font-weight:700;color:#15803d;flex:1;}
+.tbtn{height:30px;padding:0 .65rem;border-radius:8px;border:1px solid #d1e8d1;background:#f4f8f4;color:#4b6b4b;font-family:'Kanit',sans-serif;font-size:.7rem;font-weight:600;cursor:pointer;}
+.wrap{max-width:640px;margin:1.5rem auto;padding:0 1rem;}
+.card{background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.07);overflow:hidden;margin-bottom:1rem;}
+.card-head{padding:.85rem 1.2rem;border-bottom:1px solid #e8f5e8;font-size:.85rem;font-weight:700;color:#15803d;}
+.card-body{padding:1rem 1.2rem;}
+.add-row{display:flex;gap:.5rem;margin-bottom:1rem;}
+.add-row input{flex:1;height:36px;padding:.3rem .7rem;border:1.5px solid #c8dfc8;border-radius:9px;background:#f4f8f4;font-family:'Kanit',sans-serif;font-size:.78rem;outline:none;}
+.add-row input:focus{border-color:#16a34a;}
+.add-row select{height:36px;padding:0 .5rem;border:1.5px solid #c8dfc8;border-radius:9px;background:#f4f8f4;font-family:'Kanit',sans-serif;font-size:.78rem;outline:none;}
+.add-row button{height:36px;padding:0 .9rem;border-radius:9px;background:linear-gradient(135deg,#14532d,#16a34a);color:#fff;border:none;font-family:'Kanit',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;}
+.role-row{display:flex;align-items:center;gap:.5rem;padding:.55rem 0;border-bottom:1px solid #f0f8f0;}
+.role-row:last-child{border-bottom:none;}
+.role-email{flex:1;font-size:.78rem;color:#1a2e1a;word-break:break-all;}
+.role-badge{font-size:.65rem;font-weight:800;padding:.18rem .55rem;border-radius:20px;white-space:nowrap;}
+.r-admin{background:#fef3c7;color:#b45309;}
+.r-staff{background:#dcfce7;color:#166534;}
+.r-viewer{background:#dbeafe;color:#1d4ed8;}
+.role-sel{height:28px;padding:0 .4rem;border:1px solid #c8dfc8;border-radius:7px;background:#f4f8f4;font-family:'Kanit',sans-serif;font-size:.72rem;outline:none;cursor:pointer;}
+.del-btn{width:28px;height:28px;border-radius:50%;border:none;background:#fee2e2;color:#b91c1c;cursor:pointer;font-size:.8rem;display:grid;place-items:center;}
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:#fff;border:1px solid #86efac;border-radius:10px;padding:.5rem 1rem;font-size:.76rem;color:#15803d;box-shadow:0 2px 12px rgba(0,0,0,.1);opacity:0;transition:opacity .25s;pointer-events:none;}
+.toast.on{opacity:1;}
+.no-access{text-align:center;padding:3rem;color:#9ab89a;font-size:.85rem;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo">🔐</div>
+  <div class="title">จัดการสิทธิ์ผู้ใช้</div>
+  <button class="tbtn" onclick="location.href='index.html'">← กลับ</button>
+  <button class="tbtn" onclick="doLogout()">ออก</button>
+</div>
+<div class="wrap" id="mainWrap">
+  <div class="card">
+    <div class="card-head">เพิ่มผู้ใช้ใหม่</div>
+    <div class="card-body">
+      <div class="add-row">
+        <input id="newEmail" type="email" placeholder="อีเมล..." autocomplete="off">
+        <select id="newRole">
+          <option value="staff">📋 Staff</option>
+          <option value="admin">👑 Admin</option>
+          <option value="viewer">👁️ Viewer</option>
+        </select>
+        <button onclick="addUser()">เพิ่ม</button>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head">รายชื่อผู้ใช้ทั้งหมด</div>
+    <div class="card-body" id="userList"><div style="color:#9ab89a;font-size:.8rem">⏳ กำลังโหลด...</div></div>
+  </div>
+  <div style="font-size:.68rem;color:#9ab89a;text-align:center;margin-top:.5rem;">
+    ⚠️ หน้านี้เข้าได้เฉพาะ Admin เท่านั้น
+  </div>
+</div>
+<div class="no-access" id="noAccess" style="display:none">🔒 คุณไม่มีสิทธิ์เข้าถึงหน้านี้ (Admin เท่านั้น)</div>
+<div class="toast" id="toast"></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({apiKey:"AIzaSyDgyBh_OWjnIpok3gR9LUsT0CAqGK6FVao",authDomain:"advance-plus-form.firebaseapp.com",projectId:"advance-plus-form",storageBucket:"advance-plus-form.firebasestorage.app",messagingSenderId:"130477031774",appId:"1:130477031774:web:09345e091812be63d04fcf"});
+const auth=firebase.auth(), db=firebase.firestore();
+function doLogout(){auth.signOut().then(()=>location.href='login.html');}
+
+auth.onAuthStateChanged(async u=>{
+  if(!u){location.href='login.html';return;}
+  const rd=await db.collection('roles').doc(u.email).get();
+  const role=rd.exists?(rd.data().role||'staff'):'staff';
+  if(role!=='admin'){
+    document.getElementById('mainWrap').style.display='none';
+    document.getElementById('noAccess').style.display='block';
+    return;
+  }
+  loadUsers();
+});
+
+async function loadUsers(){
+  const snap=await db.collection('roles').get();
+  const list=document.getElementById('userList');
+  if(snap.empty){list.innerHTML='<div style="color:#9ab89a;font-size:.8rem">ยังไม่มีผู้ใช้</div>';return;}
+  const roleName={'admin':'👑 Admin','staff':'📋 Staff','viewer':'👁️ Viewer'};
+  const roleClass={'admin':'r-admin','staff':'r-staff','viewer':'r-viewer'};
+  list.innerHTML=snap.docs.map(d=>{
+    const email=d.id, r=d.data().role||'staff';
+    return `<div class="role-row">
+      <span class="role-email">${email}</span>
+      <span class="role-badge ${roleClass[r]}">${roleName[r]||r}</span>
+      <select class="role-sel" onchange="changeRole('${email}',this.value)">
+        <option value="staff" ${r==='staff'?'selected':''}>Staff</option>
+        <option value="admin" ${r==='admin'?'selected':''}>Admin</option>
+        <option value="viewer" ${r==='viewer'?'selected':''}>Viewer</option>
+      </select>
+      <button class="del-btn" onclick="removeUser('${email}')">✕</button>
+    </div>`;
+  }).join('');
+}
+
+async function addUser(){
+  const email=document.getElementById('newEmail').value.trim().toLowerCase();
+  const role=document.getElementById('newRole').value;
+  if(!email||!email.includes('@')){toast('⚠️ อีเมลไม่ถูกต้อง');return;}
+  await db.collection('roles').doc(email).set({role,addedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  document.getElementById('newEmail').value='';
+  loadUsers(); toast('✅ เพิ่ม '+email+' เป็น '+role+' แล้ว');
+}
+
+async function changeRole(email,role){
+  await db.collection('roles').doc(email).update({role});
+  loadUsers(); toast('✅ อัปเดตสิทธิ์ '+email+' เป็น '+role);
+}
+
+async function removeUser(email){
+  if(!confirm('ลบ '+email+' ออกจากระบบ?'))return;
+  await db.collection('roles').doc(email).delete();
+  loadUsers(); toast('🗑 ลบ '+email+' แล้ว');
+}
+
+let _t; function toast(m){const e=document.getElementById('toast');e.textContent=m;e.classList.add('on');clearTimeout(_t);_t=setTimeout(()=>e.classList.remove('on'),3000);}
+</script>
+</body>
+</html>

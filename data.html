@@ -281,11 +281,26 @@ firebase.initializeApp({
 const auth=firebase.auth(), db=firebase.firestore();
 
 // Auth
-auth.onAuthStateChanged(u=>{
+auth.onAuthStateChanged(async u=>{
   if(!u){location.href='login.html';return;}
   document.getElementById('userEl').textContent='👤 '+(u.displayName||u.email.split('@')[0]);
+  // fetch role
+  try{
+    const rd=await db.collection('roles').doc(u.email).get();
+    window._userRole = rd.exists?(rd.data().role||'staff'):'staff';
+  }catch(e){ window._userRole='staff'; }
+  applyDataRoleUI(window._userRole);
   init();
 });
+
+function applyDataRoleUI(role){
+  if(role==='viewer'||role==='staff'){
+    // ซ่อนปุ่มลบ
+    document.querySelectorAll('.del-sel-btn, [onclick="deleteAll()"], [onclick="deleteDoc()"]')
+      .forEach(el=>el.style.display='none');
+  }
+  // admin เห็นทุกอย่าง
+}
 function doLogout(){auth.signOut().then(()=>location.href='login.html');}
 
 // Theme
@@ -304,7 +319,7 @@ function toggleTheme(){
 }
 
 // Config
-const TABS=['ทั้งหมด','CI1','CI2','CS1','CS2','CW','CH','CR'];
+const TABS=['ทั้งหมด','CI1','CI2','CS1','CS2','CW','CH','CR','✅ จบงาน','❌ ตัดออก'];
 const KEYS=['timestamp','name','type','phone','channel','problem','dateStart','dateEnd','progress','action','result','cost','note'];
 const LBLS=['เวลา','ชื่อ','ประเภท','เบอร์','ช่องทาง','ปัญหา','เข้างาน','เสร็จงาน','ความคืบหน้า','การดำเนินการ','สถานะ','ค่าใช้จ่าย','หมายเหตุ'];
 
@@ -341,14 +356,19 @@ function switchTab(t){
 }
 function updateCounts(){
   TABS.forEach(t=>{
-    const n=t==='ทั้งหมด'?docs.length:docs.filter(d=>(d.type||'')===t).length;
+    let n=0;
+    if(t==='ทั้งหมด') n=docs.length;
+    else if(t==='✅ จบงาน') n=docs.filter(d=>(d.result||'').includes('จบงาน')).length;
+    else if(t==='❌ ตัดออก') n=docs.filter(d=>d.result==='ตัดออก').length;
+    else n=docs.filter(d=>(d.type||'').toUpperCase()===t.toUpperCase()).length;
     const e=document.getElementById('n_'+t); if(e)e.textContent=n;
   });
 }
 function applyTabFilter(){
-  filtered = activeTab==='ทั้งหมด'
-    ? [...docs]
-    : docs.filter(d => (d.type||'').toString().toUpperCase().startsWith(activeTab.toUpperCase()) && (d.type||'').toString().toUpperCase() === activeTab.toUpperCase());
+  if (activeTab==='ทั้งหมด') filtered=[...docs];
+  else if (activeTab==='✅ จบงาน') filtered=docs.filter(d=>(d.result||'').includes('จบงาน'));
+  else if (activeTab==='❌ ตัดออก') filtered=docs.filter(d=>d.result==='ตัดออก');
+  else filtered=docs.filter(d=>(d.type||'').toUpperCase()===activeTab.toUpperCase());
   applyFilter();
 }
 
@@ -373,6 +393,15 @@ function applyFilter(){
   renderHead(); renderBody(rows);
 }
 function sortBy(i){sc===i?sa=!sa:(sc=i,sa=true);applyFilter();}
+
+// convert stored datetime string to datetime-local input value
+function dtLocalVal(s){
+  if(!s)return'';
+  if(s.includes('T'))return s.slice(0,16);
+  const m=s.match(/(\d{2})\/(\d{2})\/(\d{2})\s+(\d{2}):(\d{2})/);
+  if(m)return`20${m[3]}-${m[2]}-${m[1]}T${m[4]}:${m[5]}`;
+  return'';
+}
 
 // Row colors + selection
 let rowColors={}, selectedRows=new Set();
@@ -500,11 +529,11 @@ function buildFields(d){
     {k:'name',l:'ชื่อลูกค้า',t:'text'},{k:'type',l:'ประเภทงาน',t:'type'},
     {k:'phone',l:'เบอร์โทรศัพท์',t:'text'},{k:'channel',l:'ช่องทางติดต่อ',t:'channel'},
     {k:'problem',l:'ปัญหา / ระบบ',t:'ta'},
-    {sec:'🔧 ช่าง'},
-    {k:'dateStart',l:'วันที่เข้างาน',t:'text'},{k:'dateEnd',l:'วันที่เสร็จงาน',t:'text'},
-    {k:'progress',l:'ความคืบหน้า',t:'progress'},{k:'action',l:'การดำเนินการ',t:'ta'},
-    {sec:'👤 Admin'},
-    {k:'result',l:'สถานะงาน',t:'result'},{k:'cost',l:'ค่าใช้จ่าย (บาท)',t:'text'},{k:'note',l:'หมายเหตุ',t:'ta'},
+    {sec:'🔧 รายละเอียด'},
+    {k:'dateStart',l:'วันที่เข้างาน',t:'dt'},{k:'dateEnd',l:'วันที่เสร็จงาน',t:'dt'},
+    {k:'progress',l:'ความคืบหน้า (ฝั่งผู้กรอก)',t:'progress'},{k:'action',l:'การดำเนินการ',t:'action'},
+    {sec:'📋 ผลลัพธ์'},
+    {k:'result',l:'สถานะงาน (ฝั่ง Advance Plus)',t:'result'},{k:'cost',l:'ค่าใช้จ่าย (บาท)',t:'text'},{k:'note',l:'หมายเหตุ',t:'ta'},
   ];
   let h='',ig=false;
   rows.forEach(r=>{
@@ -515,8 +544,10 @@ function buildFields(d){
     const v=esc(d[r.k]||'');let inp='';
     if(r.t==='type')inp=`<select id="mf_${r.k}">${['CI1','CI2','CS1','CS2','CW','CH','CR'].map(o=>`<option${v===o?' selected':''}>${o}</option>`).join('')}</select>`;
     else if(r.t==='channel')inp=`<select id="mf_${r.k}">${['หน้าร้าน','Facebook','Line Official','โทรศัพท์'].map(o=>`<option${v===o?' selected':''}>${o}</option>`).join('')}</select>`;
-    else if(r.t==='progress')inp=`<select id="mf_${r.k}"><option value="">—</option>${['กำลังดำเนินการ','อยู่ระหว่างดำเนินงาน','รอลูกค้าตอบกลับ','รอนัดหมาย','รอสั่งอะไหล่','ไม่สำเร็จ','เสร็จสิ้น'].map(o=>`<option${v===o?' selected':''}>${o}</option>`).join('')}</select>`;
-    else if(r.t==='result')inp=`<select id="mf_${r.k}"><option value="">—</option>${['จบงานเรียบร้อย','จบงาน — รอเก็บเงิน','จบงาน — รอโอนเงิน','จบงาน — เครดิต','นัดซ่อมครั้งถัดไป','ลูกค้ายกเลิก','ตัดออก'].map(o=>`<option${v===o?' selected':''}>${o}</option>`).join('')}</select>`;
+    else if(r.t==='dt')inp=`<input type="datetime-local" id="mf_${r.k}" value="${esc(dtLocalVal(d[r.k]||''))}">`;
+    else if(r.t==='progress')inp=`<select id="mf_${r.k}"><option value="">—</option>${['อยู่ระหว่างการดำเนินการ','รอลูกค้าตอบกลับ','รอนัดหมาย','รอสั่งอะไหล่','สำเร็จ','ไม่สำเร็จ'].map(o=>`<option${v===o.replace(/^[^\s]+ /,'')||v===o?' selected':''}>${o}</option>`).join('')}</select>`;
+    else if(r.t==='action')inp=`<select id="mf_${r.k}"><option value="">—</option>${['แจ้งช่างเข้าพื้นที่','ตรวจสอบระบบ','ปรับตั้งค่าระบบ','ซ่อมแซมอุปกรณ์','เปลี่ยนอุปกรณ์','ติดตั้งอุปกรณ์เพิ่มเติม','แก้ไขสายสัญญาณ','อัพเดทซอฟต์แวร์ / Firmware','รอสั่งอะไหล่','นัดหมายครั้งถัดไป','แจ้งผลให้ลูกค้าทราบ','อื่นๆ'].map(o=>`<option${v===o?' selected':''}>${o}</option>`).join('')}</select>`;
+    else if(r.t==='result')inp=`<select id="mf_${r.k}"><option value="">— ยังไม่ระบุ —</option>${['จบงานเรียบร้อย','จบงาน — รอเก็บเงิน','จบงาน — รอโอนเงิน','จบงาน — เครดิต','นัดซ่อมครั้งถัดไป','รอลูกค้าชำระ','ลูกค้ายกเลิก','ตัดออก'].map(o=>`<option${v===o?' selected':''}>${o}</option>`).join('')}</select>`;
     else if(r.t==='ta')inp=`<textarea id="mf_${r.k}" rows="2">${v}</textarea>`;
     else inp=`<input type="text" id="mf_${r.k}" value="${v}">`;
     h+=`<div class="mfg"${r.t==='ta'?' style="grid-column:1/-1"':''}><label>${r.l}</label>${inp}</div>`;
@@ -556,6 +587,8 @@ async function saveDoc(){
   const keys=['name','type','phone','channel','problem','dateStart','dateEnd','progress','action','result','cost','note'];
   const u={};
   keys.forEach(k=>{const el=document.getElementById('mf_'+k);if(el)u[k]=el.value;});
+  const r=u.result||'';
+  u.rowColor=r.includes('จบงาน')?'#bbf7d0':r==='ตัดออก'||r==='ลูกค้ายกเลิก'?'#fca5a5':'';
   u.updatedAt=firebase.firestore.FieldValue.serverTimestamp();
   u.updatedBy=auth.currentUser?.email||'';
   try{

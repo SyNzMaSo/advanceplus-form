@@ -796,14 +796,17 @@
 
       <!-- ความคืบหน้า -->
       <div class="fg">
-        <label for="f_progress">ความคืบหน้า <span class="req">*</span></label>
+        <label for="f_progress">ความคืบหน้า (ฝั่งผู้กรอก) <span class="req">*</span></label>
         <div class="input-wrap">
           <svg class="input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           <select id="f_progress" onchange="updateFilled(this)">
             <option value="" disabled selected>เลือกสถานะ</option>
-            <option value="อยู่ระหว่างการดำเนินการ">อยู่ระหว่างการดำเนินการ</option>
-            <option value="สำเร็จ">สำเร็จ</option>
-            <option value="ไม่สำเร็จ">ไม่สำเร็จ</option>
+            <option value="อยู่ระหว่างการดำเนินการ">🟡 อยู่ระหว่างการดำเนินการ</option>
+            <option value="รอลูกค้าตอบกลับ">⏳ รอลูกค้าตอบกลับ</option>
+            <option value="รอนัดหมาย">📅 รอนัดหมาย</option>
+            <option value="รอสั่งอะไหล่">🔩 รอสั่งอะไหล่</option>
+            <option value="สำเร็จ">✅ สำเร็จ</option>
+            <option value="ไม่สำเร็จ">❌ ไม่สำเร็จ</option>
           </select>
           <span class="sel-arrow">▾</span>
         </div>
@@ -846,17 +849,22 @@
 
       <!-- สถานะงาน -->
       <div class="fg">
-        <label for="f_result">สถานะงาน <span class="req">*</span></label>
+        <label for="f_result">สถานะงาน (ฝั่ง Advance Plus และลูกค้า) <span class="opt">ไม่บังคับ</span></label>
         <div class="input-wrap">
           <svg class="input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="9 11 12 14 22 4"/></svg>
-          <select id="f_result" onchange="updateFilled(this)">
-            <option value="" disabled selected>— เลือกสถานะ —</option>
+          <select id="f_result" onchange="onResultChange()">
+            <option value="">— ยังไม่ระบุ —</option>
             <option value="จบงานเรียบร้อย">✅ จบงานเรียบร้อย</option>
+            <option value="จบงาน — รอเก็บเงิน">💰 จบงาน — รอเก็บเงิน</option>
+            <option value="จบงาน — รอโอนเงิน">🏦 จบงาน — รอโอนเงิน</option>
+            <option value="จบงาน — เครดิต">📋 จบงาน — เครดิต</option>
+            <option value="นัดซ่อมครั้งถัดไป">🔄 นัดซ่อมครั้งถัดไป</option>
+            <option value="รอลูกค้าชำระ">💳 รอลูกค้าชำระ</option>
+            <option value="ลูกค้ายกเลิก">🚫 ลูกค้ายกเลิก</option>
             <option value="ตัดออก">❌ ตัดออก</option>
           </select>
           <span class="sel-arrow">▾</span>
         </div>
-        <div class="err-msg" id="err_result"><svg width="10" height="10" viewBox="0 0 24 24" fill="var(--red)"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16v.5" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>กรุณาเลือกสถานะงาน</div>
       </div>
 
       <!-- ค่าใช้จ่าย + หมายเหตุ -->
@@ -931,11 +939,24 @@
   });
   var auth = firebase.auth();
   var db   = firebase.firestore();
-  auth.onAuthStateChanged(user => {
+  auth.onAuthStateChanged(async user => {
     if (!user) { window.location.href = 'login.html'; return; }
     const name = user.displayName || user.email.split('@')[0];
     const el = document.getElementById('userNameBadge');
     if (el) el.textContent = '👤 ' + name;
+    // ── per-user key ──
+    _userKey = user.email.replace(/[^a-z0-9]/gi,'_');
+    const savedTheme = localStorage.getItem(_lsKey('adv-theme'));
+    if (savedTheme) setTheme(savedTheme);
+    if (typeof loadCZ === 'function') loadCZ();
+    // ── fetch role ──
+    try {
+      const roleDoc = await db.collection('roles').doc(user.email).get();
+      window._userRole = roleDoc.exists ? (roleDoc.data().role || 'staff') : 'staff';
+    } catch(e) {
+      window._userRole = 'staff';
+    }
+    applyRoleRestrictions(window._userRole);
   });
 </script>
 
@@ -943,17 +964,22 @@
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyUzM846I6-IvEm4l5Tf-pNyJuiiRLNzc37xHzioa2_wtmNeVeUChckI_EMxR7DfPE/exec';
 
 // ─── THEME ───
+let _userKey = ''; // set after auth
+
+function _lsKey(k){ return _userKey ? k+'__'+_userKey : k; }
+
 function setTheme(t) {
   document.documentElement.setAttribute('data-theme', t);
-  localStorage.setItem('adv-theme', t);
+  localStorage.setItem(_lsKey('adv-theme'), t);
 }
 function toggleTheme() {
   setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
 }
+// initial theme before auth (use generic key)
 (function(){
-  const s = localStorage.getItem('adv-theme') ||
+  const s = localStorage.getItem(_lsKey('adv-theme')) ||
     (window.matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
-  setTheme(s);
+  document.documentElement.setAttribute('data-theme', s);
 })();
 
 // ─── PHONE ───
@@ -1286,7 +1312,7 @@ function showToastMsg(msg) {
 
 // ─── RESET ───
 function resetForm() {
-  ['f_name','f_phone','f_phone_prefix','f_type','f_channel','f_date_start'].forEach(id=>{
+  ['f_name','f_phone','f_phone_prefix','f_type','f_channel','f_date_start','f_progress','f_action','f_result','f_cost','f_note','f_date_end'].forEach(id=>{
     const el=document.getElementById(id); if(el){el.value='';el.classList.remove('has-val');}
   });
   phoneDots.forEach(d=>{ d.style.background=''; });
@@ -1319,6 +1345,109 @@ function resetForm() {
 let _isSubmitting = false;
 let _lastSubmitKey = '';
 let _lastSubmitTime = 0;
+
+// ─── ROLE RESTRICTIONS ───
+// admin  = ทุกอย่าง
+// staff  = กรอกฟอร์ม + ดู data (ลบไม่ได้)
+// viewer = ดู data อย่างเดียว ไม่กรอก
+function applyRoleRestrictions(role){
+  if (role === 'viewer') {
+    // ซ่อนฟอร์มทั้งหมด เปลี่ยนปุ่มเป็น read-only
+    const form = document.querySelector('.card-wrap');
+    if (form) {
+      form.style.pointerEvents = 'none';
+      form.style.opacity = '0.6';
+    }
+    const btn = document.getElementById('submitBtn_cc');
+    if (btn) { btn.disabled = true; btn.textContent = '🔒 ไม่มีสิทธิ์กรอกฟอร์ม'; }
+    showRoleBanner('👁️ Viewer — ดูข้อมูลได้อย่างเดียว', '#f59e0b');
+  } else if (role === 'staff') {
+    // ปกติ แต่ไม่มีปุ่มลบใน data.html (จัดการที่ data.html)
+    showRoleBanner('📋 Staff — กรอกและดูข้อมูลได้', '#16a34a');
+  }
+  // admin ไม่ต้องทำอะไรเพิ่ม
+}
+
+function showRoleBanner(msg, color){
+  const el = document.getElementById('userNameBadge');
+  if (el) el.innerHTML = `👤 <span style="font-size:.65rem;padding:1px 6px;border-radius:10px;background:${color}22;color:${color};border:1px solid ${color}55;">${msg}</span>`;
+}
+function onResultChange(){ updateFilled(document.getElementById('f_result')); }
+
+// ─── AUTOFILL ชื่อ → เบอร์ ───
+let _nameTimer=null;
+document.getElementById('f_name').addEventListener('input', function(){
+  updateFilled(this);
+  const name=this.value.trim();
+  clearTimeout(_nameTimer);
+  if(name.length<2)return;
+  _nameTimer=setTimeout(async()=>{
+    try{
+      const snap=await db.collection('customers')
+        .where('name','==',name).orderBy('timestamp','desc').limit(1).get();
+      if(!snap.empty){
+        const d=snap.docs[0].data();
+        if(d.phone){
+          const phone=d.phone.toString().trim();
+          // แยก prefix กับตัวเลข
+          const prefixEl=document.getElementById('f_phone_prefix');
+          const phoneEl=document.getElementById('f_phone');
+          const pre=phone.match(/^(CI|CS|CW|CH|CR)/i);
+          if(pre){
+            prefixEl.value=pre[0].toUpperCase();
+            phoneEl.value=phone.slice(pre[0].length);
+          } else {
+            phoneEl.value=phone;
+          }
+          phoneEl.dispatchEvent(new Event('input'));
+          updateFilled(prefixEl);
+        }
+      }
+    }catch(e){}
+  },600);
+});
+(function(){
+  const prefixEl = document.getElementById('f_phone_prefix');
+  const typeEl   = document.getElementById('f_type');
+  prefixEl.addEventListener('change', function(){
+    updateFilled(this);
+    const pre = this.value;
+    // show/hide type options
+    Array.from(typeEl.options).forEach(o => { o.hidden = !!(o.value && !o.value.startsWith(pre)); });
+    if (typeEl.value && !typeEl.value.startsWith(pre)){ typeEl.value=''; onTypeChange(); }
+    // CW/CH/CR have only one option → auto-select
+    const singleMap = {'CW':'CW','CH':'CH','CR':'CR','CI':null,'CS':null};
+    if (pre in singleMap && singleMap[pre]) {
+      typeEl.value = singleMap[pre];
+      updateFilled(typeEl);
+      onTypeChange();
+    }
+  });
+  typeEl.addEventListener('change', function(){
+    if (!this.value) return;
+    const pre = this.value.replace(/\d+$/,'');
+    if (pre && prefixEl.value !== pre) prefixEl.value = pre;
+  });
+})();
+
+// ─── IMAGE COMPRESS (max 200KB each) ───
+async function compressImage(file, maxKB=200){
+  return new Promise(resolve => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      let w=img.width,h=img.height,mp=1200;
+      if(w>mp||h>mp){const r=Math.min(mp/w,mp/h);w=Math.round(w*r);h=Math.round(h*r);}
+      c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);
+      let q=0.85;
+      const go=()=>{
+        const d=c.toDataURL('image/jpeg',q);
+        if(Math.round(d.length*3/4/1024)<=maxKB||q<=0.3){URL.revokeObjectURL(url);resolve({name:file.name,data:d,type:'image/jpeg'});}
+        else{q-=0.1;go();}
+      };go();
+    };img.src=url;
+  });
+}
 
 // ─── TICKET SEARCH ───
 async function loadTicket() {
@@ -1437,16 +1566,15 @@ async function _doSubmit(btnId, sectionLabel) {
   toast.style.display='none';
   toastErr.classList.remove('show');
   try {
-    // ── แปลงรูปเป็น base64 ──
-    async function filesToBase64(files) {
-      return Promise.all((files||[]).map(f => new Promise((res,rej) => {
-        const r = new FileReader();
-        r.onload = () => res({ name:f.name, data:r.result, type:f.type });
-        r.onerror = rej;
-        r.readAsDataURL(f);
-      })));
-    }
-    const imgCC = await filesToBase64(UPLOAD_FILES['cc']);
+    // ── แปลงและบีบอัดรูป ──
+    const imgCC = await Promise.all((UPLOAD_FILES['cc']||[]).map(f=>compressImage(f)));
+
+    // ── กำหนดสีแถวตามสถานะ ──
+    const resultVal = v.result || '';
+    const autoColor = resultVal.includes('จบงาน') || resultVal === 'จบงานเรียบร้อย'
+      ? '#bbf7d0'
+      : resultVal === 'ตัดออก' || resultVal === 'ลูกค้ายกเลิก'
+      ? '#fca5a5' : '';
 
     // ── Firestore ──
     await db.collection('customers').add({
@@ -1454,6 +1582,7 @@ async function _doSubmit(btnId, sectionLabel) {
       timestamp:   firebase.firestore.FieldValue.serverTimestamp(),
       submittedBy: auth.currentUser?.email || '',
       images:      { cc: imgCC },
+      rowColor:    autoColor,
     });
 
     // ── Google Sheets เหมือนเดิม ──
@@ -1468,7 +1597,8 @@ async function _doSubmit(btnId, sectionLabel) {
       btn.innerHTML=btn.getAttribute('data-label');
       btn.style.background=''; btn.disabled=false;
       toast.style.display='none'; _isSubmitting=false;
-    },3500);
+      resetForm(); // ─── reset หลังส่งสำเร็จ ───
+    },2500);
   } catch(err) {
     toastErr.classList.add('show');
     document.getElementById('toastErrMsg').textContent='Error: '+err.message;
@@ -1493,21 +1623,24 @@ async function handleSubmitCC() {
   } else hideErr('f_phone','err_phone');
   if(!document.getElementById('f_channel').value){showErr('f_channel','err_channel');ok=false;} else hideErr('f_channel','err_channel');
   if(!document.getElementById('f_type').value)   {showErr('f_type','err_type');ok=false;}        else hideErr('f_type','err_type');
-  // cascade
-  const isCI = document.getElementById('f_type').value?.startsWith('CI');
-  const mainCat = document.getElementById('f_main_cat').value;
-  if(!mainCat){showErr('f_main_cat','err_main_cat');ok=false;} else hideErr('f_main_cat','err_main_cat');
-  if(mainCat==='อื่นๆ'&&!document.getElementById('f_main_cat_other').value.trim()){showErr('f_main_cat_other','err_main_cat_other');ok=false;} else hideErr('f_main_cat_other','err_main_cat_other');
-  if(isCI){
-    if(!document.getElementById('f_site_type').value){showErr('f_site_type','err_site_type');ok=false;} else hideErr('f_site_type','err_site_type');
-    if(!document.getElementById('f_points').value){showErr('f_points','err_points');ok=false;} else {
-      hideErr('f_points','err_points');
-      if(document.getElementById('f_points').value==='อื่นๆ'&&!document.getElementById('f_points_other').value.trim()){showErr('f_points_other','err_points_other');ok=false;} else hideErr('f_points_other','err_points_other');
+  // cascade — only validate when visible
+  const typeVal = document.getElementById('f_type').value;
+  const isCI = typeVal?.startsWith('CI');
+  if (typeVal) {
+    const mainCat = document.getElementById('f_main_cat').value;
+    if(!mainCat){showErr('f_main_cat','err_main_cat');ok=false;} else hideErr('f_main_cat','err_main_cat');
+    if(mainCat==='อื่นๆ'&&!document.getElementById('f_main_cat_other').value.trim()){showErr('f_main_cat_other','err_main_cat_other');ok=false;} else hideErr('f_main_cat_other','err_main_cat_other');
+    if(isCI){
+      if(!document.getElementById('f_site_type').value){showErr('f_site_type','err_site_type');ok=false;} else hideErr('f_site_type','err_site_type');
+      if(!document.getElementById('f_points').value){showErr('f_points','err_points');ok=false;} else {
+        hideErr('f_points','err_points');
+        if(document.getElementById('f_points').value==='อื่นๆ'&&!document.getElementById('f_points_other').value.trim()){showErr('f_points_other','err_points_other');ok=false;} else hideErr('f_points_other','err_points_other');
+      }
+    } else {
+      const subCat=document.getElementById('f_sub_cat').value;
+      if(!subCat){showErr('f_sub_cat','err_sub_cat');ok=false;} else hideErr('f_sub_cat','err_sub_cat');
+      if(subCat==='อื่นๆ'&&!document.getElementById('f_sub_cat_other').value.trim()){showErr('f_sub_cat_other','err_sub_cat_other');ok=false;} else hideErr('f_sub_cat_other','err_sub_cat_other');
     }
-  } else {
-    const subCat=document.getElementById('f_sub_cat').value;
-    if(!subCat){showErr('f_sub_cat','err_sub_cat');ok=false;} else hideErr('f_sub_cat','err_sub_cat');
-    if(subCat==='อื่นๆ'&&!document.getElementById('f_sub_cat_other').value.trim()){showErr('f_sub_cat_other','err_sub_cat_other');ok=false;} else hideErr('f_sub_cat_other','err_sub_cat_other');
   }
   if(!document.getElementById('f_progress').value)  {showErr('f_progress','err_progress');ok=false;}   else hideErr('f_progress','err_progress');
   const actionVal=document.getElementById('f_action').value;
@@ -1515,7 +1648,8 @@ async function handleSubmitCC() {
     hideErr('f_action','err_action');
     if(actionVal==='อื่นๆ'&&!document.getElementById('f_action_other').value.trim()){showErr('f_action_other','err_action_other');ok=false;} else hideErr('f_action_other','err_action_other');
   }
-  if(!document.getElementById('f_result').value){showErr('f_result','err_result');ok=false;} else hideErr('f_result','err_result');
+  if(!document.getElementById('f_result').value) hideErr('f_result','err_result');
+  else hideErr('f_result','err_result');
   if(!document.getElementById('f_cost').value.trim()){showErr('f_cost','err_cost');ok=false;} else hideErr('f_cost','err_cost');
   if(!ok){const b=document.getElementById('submitBtn_cc');b.style.animation='none';b.offsetHeight;b.style.animation='shake .4s ease';return;}
   _doSubmit('submitBtn_cc','📞 Call Center');
@@ -1874,8 +2008,8 @@ function czSyncControls() {
   document.getElementById('czBannerH').value = bh; document.getElementById('czBannerHVal').textContent = bh+'px';
   document.getElementById('czOverlayOpa').value = oo; document.getElementById('czOverlayVal').textContent = oo+'%';
   // Text labels
-  document.getElementById('czTitle').value    = localStorage.getItem('adv_form_title') || 'กรอกข้อมูลลูกค้า';
-  document.getElementById('czSubtitle').value = localStorage.getItem('adv_form_sub') || 'Green Energy Customer Service';
+  document.getElementById('czTitle').value    = localStorage.getItem(_lsKey('adv_form_title')) || 'กรอกข้อมูลลูกค้า';
+  document.getElementById('czSubtitle').value = localStorage.getItem(_lsKey('adv_form_sub')) || 'Green Energy Customer Service';
   czUpdateGrad();
 }
 
@@ -1971,8 +2105,8 @@ function czLiveOverlay(v) {
 }
 
 /* ── Text labels ── */
-function czLiveTitle(v)    { const el=document.querySelector('.banner h1');    if(el) el.textContent=v; localStorage.setItem('adv_form_title',v); }
-function czLiveSubtitle(v) { const el=document.querySelector('.banner-sub'); if(el) el.textContent=v; localStorage.setItem('adv_form_sub',v); }
+function czLiveTitle(v)    { const el=document.querySelector('.banner h1');    if(el) el.textContent=v; localStorage.setItem(_lsKey('adv_form_title'),v); }
+function czLiveSubtitle(v) { const el=document.querySelector('.banner-sub'); if(el) el.textContent=v; localStorage.setItem(_lsKey('adv_form_sub'),v); }
 function czLiveLabel(id,v) { const el=document.getElementById(id); if(el) el.textContent=v; }
 
 /* ── Save all ── */
@@ -1990,15 +2124,15 @@ function czResetAll() {
   if (!confirm('รีเซ็ตทุกอย่างกลับค่าเริ่มต้น?')) return;
   ['mode','bg1','bg2','bgMid','bgAngle','accent','cardStyle','fontSize','radius',
    'shadowInt','pattern','patternOpa','fieldColor','bannerStyle','bannerH','overlayOpa']
-  .forEach(k=>localStorage.removeItem('adv_'+k));
+  .forEach(k=>localStorage.removeItem(_lsKey('adv_'+k)));
   ['adv_form_title','adv_form_sub'].forEach(k=>localStorage.removeItem(k));
   location.reload();
 }
 
 /* Apply saved text on load */
 document.addEventListener('DOMContentLoaded', () => {
-  const t = localStorage.getItem('adv_form_title');
-  const s = localStorage.getItem('adv_form_sub');
+  const t = localStorage.getItem(_lsKey('adv_form_title'));
+  const s = localStorage.getItem(_lsKey('adv_form_sub'));
   if (t) { const el=document.querySelector('.banner h1'); if(el) el.textContent=t; }
   if (s) { const el=document.querySelector('.banner-sub'); if(el) el.textContent=s; }
   // Apply saved banner style
