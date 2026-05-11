@@ -290,8 +290,19 @@ auth.onAuthStateChanged(async u=>{
     window._userRole = rd.exists?(rd.data().role||'staff'):'staff';
   }catch(e){ window._userRole='staff'; }
   applyDataRoleUI(window._userRole);
-  // Show import button for admin only
+// Show Admin buttons only
   if(window._userRole==='admin'){
+    // --- 1. ปุ่มจัดการสิทธิ์ (เพิ่มใหม่) ---
+    const roleBtn=document.createElement('button');
+    roleBtn.className='tbtn';
+    roleBtn.innerHTML='🔐 จัดการสิทธิ์';
+    roleBtn.style.color='#b45309'; 
+    roleBtn.style.borderColor='#fde047';
+    roleBtn.style.background='#fef3c7'; // สีทองให้ดูพรีเมียม
+    roleBtn.onclick=()=>location.href='roles-admin.html';
+    document.querySelector('.topbar .tbtn')?.insertAdjacentElement('beforebegin',roleBtn);
+
+    // --- 2. ปุ่ม Import Excel (ของเดิม) ---
     const importBtn=document.createElement('button');
     importBtn.className='tbtn';
     importBtn.innerHTML='📥 Import Excel';
