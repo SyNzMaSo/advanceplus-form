@@ -100,7 +100,7 @@ async function loadUsers(){
       <span class="role-badge ${roleClass[r]}">${roleName[r]||r}</span>
       <select class="role-sel" onchange="changeRole('${email}',this.value)">
         <option value="staff" ${r==='staff'?'selected':''}>Staff</option>
-        <option value="admin" ${r==='admin'?'selected':''}>Admin</option>
+        <option value="admin" ${r==="admin"?'selected':''}>Admin</option>
         <option value="viewer" ${r==='viewer'?'selected':''}>Viewer</option>
       </select>
       <button class="del-btn" onclick="removeUser('${email}')">✕</button>
