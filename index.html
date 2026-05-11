@@ -666,10 +666,6 @@
           <span class="sel-arrow">▾</span>
         </div>
         <div class="err-msg" id="err_type"><svg width="10" height="10" viewBox="0 0 24 24" fill="var(--red)"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16v.5" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>กรุณาเลือกประเภท</div>
-        <div class="dest-indicator" id="destIndicator">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--g-md)" stroke-width="2.5" stroke-linecap="round"><path d="M3 12h18M3 6h18M3 18h10"/></svg>
-          บันทึกลง → ชีตหลัก + ชีต <strong id="destSheet">—</strong>
-        </div>
       </div>
 
       <!-- ช่องทางติดต่อ -->
@@ -1082,23 +1078,6 @@ function applyAutofill(c) {
   setTimeout(() => { zone.innerHTML = ''; }, 2000);
 }
 
-// ─── TYPE ───
-function onTypeChange() {
-  const val = document.getElementById('f_type').value;
-  if (!val) return;
-  document.getElementById('destSheet').textContent = val;
-  document.getElementById('destIndicator').classList.add('show');
-  hideErr('f_type','err_type');
-  updateFilled(document.getElementById('f_type'));
-
-  const isCI = val.startsWith('CI');
-  _show('fg_main_cat', true);
-  _show('fg_site_type',  isCI);
-  _show('fg_points',     isCI);
-  _show('fg_sub_cat',   !isCI);
-  _resetCascadeFields();
-}
-
 function _show(id, visible) {
   document.getElementById(id).style.display = visible ? '' : 'none';
 }
@@ -1233,8 +1212,14 @@ function countChars(id,cid,max) {
 }
 
 // ─── VALIDATION ───
-function showErr(fid,eid){ if(fid) document.getElementById(fid).classList.add('field-err'); document.getElementById(eid).classList.add('show'); }
-function hideErr(fid,eid){ if(fid) document.getElementById(fid).classList.remove('field-err'); if(eid) document.getElementById(eid).classList.remove('show'); }
+function showErr(fid,eid){ 
+  const f = document.getElementById(fid); if(f) f.classList.add('field-err'); 
+  const e = document.getElementById(eid); if(e) e.classList.add('show'); 
+}
+function hideErr(fid,eid){ 
+  const f = document.getElementById(fid); if(f) f.classList.remove('field-err'); 
+  const e = document.getElementById(eid); if(e) e.classList.remove('show'); 
+}
 ['f_name'].forEach(id=>{
   document.getElementById(id).addEventListener('input',function(){
     if(this.value.trim()) hideErr(id,'err_'+id.replace('f_',''));
@@ -1551,7 +1536,7 @@ async function _doSubmit(btnId, sectionLabel) {
   const now = Date.now();
   if (submitKey === _lastSubmitKey && (now-_lastSubmitTime) < 10000) {
     toast.style.display='block';
-    document.getElementById('toastDetail').innerHTML='\u26a0\ufe0f ข้อมูลนี้เพิ่งถูกส่งไปแล้ว';
+    document.getElementById('toastDetail').innerHTML='⚠️ ข้อมูลนี้เพิ่งถูกส่งไปแล้ว';
     return false;
   }
   _isSubmitting=true; _lastSubmitKey=submitKey; _lastSubmitTime=now;
@@ -1570,7 +1555,7 @@ async function _doSubmit(btnId, sectionLabel) {
       : resultVal === 'ตัดออก' || resultVal === 'ลูกค้ายกเลิก'
       ? '#fca5a5' : '';
 
-    // ── Firestore ──
+    // ── บันทึกลง Firestore เท่านั้น ──
     await db.collection('customers').add({
       ...v,
       timestamp:   firebase.firestore.FieldValue.serverTimestamp(),
@@ -1579,24 +1564,21 @@ async function _doSubmit(btnId, sectionLabel) {
       rowColor:    autoColor,
     });
 
-    // ── Google Sheets เหมือนเดิม ──
-    fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(v),mode:'no-cors'});
-
     toast.style.display='block';
     document.getElementById('toastDetail').innerHTML=
-      '<b>'+sectionLabel+'</b> &nbsp;|&nbsp; <b>'+(v.name||v.phone)+'</b><br>📌 บันทึกลง Sheets + Firestore แล้ว';
-    btn.innerHTML='\u2713\u00a0 ส่งแล้ว';
+      '<b>'+sectionLabel+'</b> &nbsp;|&nbsp; <b>'+(v.name||v.phone)+'</b><br>📌 บันทึกข้อมูลลงระบบเรียบร้อยแล้ว';
+    btn.innerHTML='✓ ส่งแล้ว';
     btn.style.background='linear-gradient(135deg,#0a4a1e,#157535)';
     setTimeout(()=>{
       btn.innerHTML=btn.getAttribute('data-label');
       btn.style.background=''; btn.disabled=false;
       toast.style.display='none'; _isSubmitting=false;
-      resetForm(); // ─── reset หลังส่งสำเร็จ ───
+      resetForm(); 
     },2500);
   } catch(err) {
     toastErr.classList.add('show');
     document.getElementById('toastErrMsg').textContent='Error: '+err.message;
-    btn.innerHTML='\u26a0 ลองใหม่';
+    btn.innerHTML='⚠ ลองใหม่';
     btn.style.background='linear-gradient(135deg,#9a2020,#c43030)';
     btn.disabled=false; _isSubmitting=false;
     setTimeout(()=>{btn.innerHTML=btn.getAttribute('data-label');btn.style.background='';},3000);
@@ -1606,46 +1588,103 @@ async function _doSubmit(btnId, sectionLabel) {
 
 // ─── CC SUBMIT ───
 async function handleSubmitCC() {
-  const prefix   = document.getElementById('f_phone_prefix').value;
   const rawPhone = document.getElementById('f_phone').value.trim();
-  let ok=true;
-  const name = document.getElementById('f_name').value.trim();
-  if(!name)    {showErr('f_name','err_name');ok=false;}    else hideErr('f_name','err_name');
-  if(!rawPhone){
-    document.getElementById('err_phone_txt').textContent='กรุณากรอกเบอร์โทรศัพท์';
-    showErr('f_phone','err_phone');ok=false;
-  } else hideErr('f_phone','err_phone');
-  if(!document.getElementById('f_channel').value){showErr('f_channel','err_channel');ok=false;} else hideErr('f_channel','err_channel');
-  if(!document.getElementById('f_type').value)   {showErr('f_type','err_type');ok=false;}        else hideErr('f_type','err_type');
-  // cascade — only validate when visible
-  const typeVal = document.getElementById('f_type').value;
-  const isCI = typeVal?.startsWith('CI');
-  if (typeVal) {
-    const mainCat = document.getElementById('f_main_cat').value;
-    if(!mainCat){showErr('f_main_cat','err_main_cat');ok=false;} else hideErr('f_main_cat','err_main_cat');
-    if(mainCat==='อื่นๆ'&&!document.getElementById('f_main_cat_other').value.trim()){showErr('f_main_cat_other','err_main_cat_other');ok=false;} else hideErr('f_main_cat_other','err_main_cat_other');
-    if(isCI){
-      if(!document.getElementById('f_site_type').value){showErr('f_site_type','err_site_type');ok=false;} else hideErr('f_site_type','err_site_type');
-      if(!document.getElementById('f_points').value){showErr('f_points','err_points');ok=false;} else {
-        hideErr('f_points','err_points');
-        if(document.getElementById('f_points').value==='อื่นๆ'&&!document.getElementById('f_points_other').value.trim()){showErr('f_points_other','err_points_other');ok=false;} else hideErr('f_points_other','err_points_other');
-      }
-    } else {
-      const subCat=document.getElementById('f_sub_cat').value;
-      if(!subCat){showErr('f_sub_cat','err_sub_cat');ok=false;} else hideErr('f_sub_cat','err_sub_cat');
-      if(subCat==='อื่นๆ'&&!document.getElementById('f_sub_cat_other').value.trim()){showErr('f_sub_cat_other','err_sub_cat_other');ok=false;} else hideErr('f_sub_cat_other','err_sub_cat_other');
-    }
-  }
-  if(!document.getElementById('f_progress').value)  {showErr('f_progress','err_progress');ok=false;}   else hideErr('f_progress','err_progress');
-  const actionVal=document.getElementById('f_action').value;
-  if(!actionVal){showErr('f_action','err_action');ok=false;} else {
-    hideErr('f_action','err_action');
-    if(actionVal==='อื่นๆ'&&!document.getElementById('f_action_other').value.trim()){showErr('f_action_other','err_action_other');ok=false;} else hideErr('f_action_other','err_action_other');
-  }
-  if(!document.getElementById('f_result').value) hideErr('f_result','err_result');
-  else hideErr('f_result','err_result');
 
-  if(!ok){const b=document.getElementById('submitBtn_cc');b.style.animation='none';b.offsetHeight;b.style.animation='shake .4s ease';return;}
+  // 1. ล้างการแจ้งเตือนสีแดงอันเก่าออกให้หมดก่อน
+  document.querySelectorAll('.field-err').forEach(el => el.classList.remove('field-err'));
+  document.querySelectorAll('.err-msg.show').forEach(el => el.classList.remove('show'));
+
+  let missing = [];
+  let ok = true;
+
+  // 2. ฟังก์ชันตรวจสอบแบบใหม่ (ข้ามช่องที่ถูกซ่อนอยู่)
+  function check(id, errId, name) {
+    const el = document.getElementById(id);
+    if (!el) return true; // ป้องกัน Error
+    
+    // สำคัญมาก: เช็คว่าช่องนั้น "มองเห็นอยู่บนหน้าจอ" หรือไม่ (ถ้าซ่อนอยู่ ให้ข้ามไปเลย ไม่ต้องบังคับกรอก)
+    if (el.offsetParent === null) return true; 
+
+    const val = el.value;
+    if (!val || val.trim() === '') {
+      showErr(id, errId);
+      missing.push(name); // เก็บชื่อหัวข้อที่ลืมกรอกไว้
+      ok = false;
+      return false;
+    }
+    hideErr(id, errId);
+    return true;
+  }
+
+  // 3. เริ่มไล่เช็คทีละหัวข้อ
+  check('f_name', 'err_name', 'ชื่อลูกค้า');
+
+  // เช็คเบอร์โทรศัพท์แยกต่างหาก (เพราะต้องเช็ค 10 หลัก)
+  if (!rawPhone) {
+    document.getElementById('err_phone_txt').textContent = 'กรุณากรอกเบอร์โทรศัพท์';
+    showErr('f_phone', 'err_phone');
+    missing.push('เบอร์โทรศัพท์');
+    ok = false;
+  } else if (rawPhone.length < 10) {
+    document.getElementById('err_phone_txt').textContent = 'กรุณากรอกเบอร์ให้ครบ 10 หลัก';
+    showErr('f_phone', 'err_phone');
+    missing.push('เบอร์โทรศัพท์ (ไม่ครบ 10 หลัก)');
+    ok = false;
+  } else {
+    hideErr('f_phone', 'err_phone');
+  }
+
+  check('f_type', 'err_type', 'ประเภท');
+  check('f_channel', 'err_channel', 'ช่องทางติดต่อ');
+
+  check('f_main_cat', 'err_main_cat', 'ระบบ/ประเภทปัญหา');
+  if (document.getElementById('f_main_cat').value === 'อื่นๆ') {
+    check('f_main_cat_other', 'err_main_cat_other', 'ระบุชื่อระบบ');
+  }
+
+  check('f_site_type', 'err_site_type', 'ลักษณะหน้างาน');
+  check('f_points', 'err_points', 'จำนวนจุด');
+  if (document.getElementById('f_points').value === 'อื่นๆ') {
+    check('f_points_other', 'err_points_other', 'ระบุจำนวนจุด');
+  }
+
+  check('f_sub_cat', 'err_sub_cat', 'ปัญหา/อาการ');
+  if (document.getElementById('f_sub_cat').value === 'อื่นๆ') {
+    check('f_sub_cat_other', 'err_sub_cat_other', 'ระบุอาการ');
+  }
+
+  check('f_progress', 'err_progress', 'ความคืบหน้า');
+
+  check('f_action', 'err_action', 'การดำเนินการ');
+  if (document.getElementById('f_action').value === 'อื่นๆ') {
+    check('f_action_other', 'err_action_other', 'ระบุการดำเนินการ');
+  }
+
+  // 4. ถ้าข้อมูลไม่ครบ ให้สั่นปุ่ม และแจ้งเตือนชี้เป้า
+  if (!ok) {
+    const b = document.getElementById('submitBtn_cc');
+    b.style.animation = 'none';
+    b.offsetHeight;
+    b.style.animation = 'shake .4s ease';
+
+    // เลื่อนจอไปหาจุดที่ผิดจุดแรก
+    setTimeout(() => {
+      const firstErr = document.querySelector('.field-err');
+      if (firstErr) {
+        firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 50);
+
+    // แสดง Toast สีแดงด้านล่าง บอกเลยว่าลืมกรอกหัวข้อไหนบ้าง
+    const toastErr = document.getElementById('toastErr');
+    document.getElementById('toastErrMsg').innerHTML = '<b>กรุณากรอกข้อมูลให้ครบ:</b><br>' + missing.join(', ');
+    toastErr.classList.add('show');
+    setTimeout(() => toastErr.classList.remove('show'), 6000);
+
+    return;
+  }
+
+  // 5. ถ้าผ่านทุกด่านแล้ว บันทึกข้อมูลได้เลย!
   _doSubmit('submitBtn_cc','📞 Call Center');
 }
 
