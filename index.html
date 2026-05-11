@@ -870,7 +870,7 @@
       <!-- ค่าใช้จ่าย + หมายเหตุ -->
       <div class="row-2">
         <div class="fg">
-          <label for="f_cost">ค่าใช้จ่าย (บาท) <span class="req">*</span></label>
+          <label for="f_cost">ค่าใช้จ่าย (บาท) <span class="opt">ไม่บังคับ</span></label>
           <div class="input-wrap">
             <svg class="input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 1 0 0 7h5a3.5 3.5 0 1 1 0 7H6"/></svg>
             <input type="text" id="f_cost" placeholder="เช่น 1500" inputmode="decimal" oninput="updateFilled(this)">
@@ -1351,26 +1351,20 @@ let _lastSubmitTime = 0;
 // staff  = กรอกฟอร์ม + ดู data (ลบไม่ได้)
 // viewer = ดู data อย่างเดียว ไม่กรอก
 function applyRoleRestrictions(role){
-  if (role === 'viewer') {
-    // ซ่อนฟอร์มทั้งหมด เปลี่ยนปุ่มเป็น read-only
+  // staff  = กรอกฟอร์มได้ + เปิด data.html ได้แต่ดูอย่างเดียว (ไม่แก้/ลบ)
+  // viewer = กรอกฟอร์มไม่ได้ + เปิด data.html แก้ไขได้แต่ลบไม่ได้
+  // admin  = ทุกอย่าง
+  window._userRole = role;
+  const badge = document.getElementById('userNameBadge');
+  if (role === 'staff') {
+    if(badge) badge.insertAdjacentHTML('beforeend','&nbsp;<span style="font-size:.61rem;padding:1px 6px;border-radius:10px;background:#dcfce7;color:#16a34a;border:1px solid #86efac;">📋 Staff</span>');
+  } else if (role === 'viewer') {
     const form = document.querySelector('.card-wrap');
-    if (form) {
-      form.style.pointerEvents = 'none';
-      form.style.opacity = '0.6';
-    }
+    if(form){form.style.pointerEvents='none';form.style.opacity='0.55';}
     const btn = document.getElementById('submitBtn_cc');
-    if (btn) { btn.disabled = true; btn.textContent = '🔒 ไม่มีสิทธิ์กรอกฟอร์ม'; }
-    showRoleBanner('👁️ Viewer — ดูข้อมูลได้อย่างเดียว', '#f59e0b');
-  } else if (role === 'staff') {
-    // ปกติ แต่ไม่มีปุ่มลบใน data.html (จัดการที่ data.html)
-    showRoleBanner('📋 Staff — กรอกและดูข้อมูลได้', '#16a34a');
+    if(btn){btn.disabled=true;btn.innerHTML='🔒 Viewer — ไม่มีสิทธิ์กรอก';}
+    if(badge) badge.insertAdjacentHTML('beforeend','&nbsp;<span style="font-size:.61rem;padding:1px 6px;border-radius:10px;background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd;">👁️ Viewer</span>');
   }
-  // admin ไม่ต้องทำอะไรเพิ่ม
-}
-
-function showRoleBanner(msg, color){
-  const el = document.getElementById('userNameBadge');
-  if (el) el.innerHTML = `👤 <span style="font-size:.65rem;padding:1px 6px;border-radius:10px;background:${color}22;color:${color};border:1px solid ${color}55;">${msg}</span>`;
 }
 function onResultChange(){ updateFilled(document.getElementById('f_result')); }
 
@@ -1617,8 +1611,8 @@ async function handleSubmitCC() {
   let ok=true;
   const name = document.getElementById('f_name').value.trim();
   if(!name)    {showErr('f_name','err_name');ok=false;}    else hideErr('f_name','err_name');
-  if(!rawPhone||rawPhone.length!==10){
-    document.getElementById('err_phone_txt').textContent=rawPhone.length===0?'กรุณากรอกเบอร์โทรศัพท์ 10 หลัก':'กรอกแล้ว '+rawPhone.length+' หลัก — ต้องครบ 10 หลัก';
+  if(!rawPhone){
+    document.getElementById('err_phone_txt').textContent='กรุณากรอกเบอร์โทรศัพท์';
     showErr('f_phone','err_phone');ok=false;
   } else hideErr('f_phone','err_phone');
   if(!document.getElementById('f_channel').value){showErr('f_channel','err_channel');ok=false;} else hideErr('f_channel','err_channel');
@@ -1650,7 +1644,7 @@ async function handleSubmitCC() {
   }
   if(!document.getElementById('f_result').value) hideErr('f_result','err_result');
   else hideErr('f_result','err_result');
-  if(!document.getElementById('f_cost').value.trim()){showErr('f_cost','err_cost');ok=false;} else hideErr('f_cost','err_cost');
+
   if(!ok){const b=document.getElementById('submitBtn_cc');b.style.animation='none';b.offsetHeight;b.style.animation='shake .4s ease';return;}
   _doSubmit('submitBtn_cc','📞 Call Center');
 }
@@ -1662,9 +1656,16 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   <script src="theme.js"></script>
   <script>
-    function doLogout() {
-      auth.signOut().then(() => window.location.href = 'login.html');
-    }
+  // ── Override THEME.get/set ให้แยกตาม email ──
+  const _origGet = typeof THEME!=='undefined' ? THEME.get.bind(THEME) : null;
+  const _origSet = typeof THEME!=='undefined' ? THEME.set.bind(THEME) : null;
+  if(typeof THEME!=='undefined'){
+    THEME.get = function(k){ return localStorage.getItem(_lsKey('adv_'+k)); };
+    THEME.set = function(k,v){ localStorage.setItem(_lsKey('adv_'+k),v); return v; };
+  }
+  function doLogout() {
+    auth.signOut().then(() => window.location.href = 'login.html');
+  }
   </script>
 
 

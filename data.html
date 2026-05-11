@@ -290,16 +290,38 @@ auth.onAuthStateChanged(async u=>{
     window._userRole = rd.exists?(rd.data().role||'staff'):'staff';
   }catch(e){ window._userRole='staff'; }
   applyDataRoleUI(window._userRole);
+  // Show import button for admin only
+  if(window._userRole==='admin'){
+    const importBtn=document.createElement('button');
+    importBtn.className='tbtn';
+    importBtn.innerHTML='📥 Import Excel';
+    importBtn.onclick=()=>document.getElementById('excelInput').click();
+    document.querySelector('.topbar .tbtn')?.insertAdjacentElement('beforebegin',importBtn);
+  }
   init();
 });
 
 function applyDataRoleUI(role){
-  if(role==='viewer'||role==='staff'){
-    // ซ่อนปุ่มลบ
-    document.querySelectorAll('.del-sel-btn, [onclick="deleteAll()"], [onclick="deleteDoc()"]')
-      .forEach(el=>el.style.display='none');
+  window._userRole=role;
+  if(role==='staff'){
+    // staff ดูอย่างเดียว - ซ่อนปุ่มแก้ไข ลบ และปิด modal บันทึก
+    window._staffReadOnly=true;
+    document.querySelectorAll('.del-sel-btn').forEach(el=>el.style.display='none');
+  } else if(role==='viewer'){
+    // viewer แก้ไขได้ ลบไม่ได้
+    window._staffReadOnly=false;
+    document.querySelectorAll('.del-sel-btn').forEach(el=>el.style.display='none');
+  } else {
+    window._staffReadOnly=false;
   }
-  // admin เห็นทุกอย่าง
+  // เพิ่ม badge
+  const uel=document.getElementById('userEl');
+  if(uel && role!=='admin'){
+    const badge=role==='staff'
+      ?'<span style="font-size:.6rem;padding:1px 6px;border-radius:10px;background:#dcfce7;color:#166534;border:1px solid #86efac;margin-left:4px">📋 Staff</span>'
+      :'<span style="font-size:.6rem;padding:1px 6px;border-radius:10px;background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd;margin-left:4px">👁️ Viewer</span>';
+    uel.insertAdjacentHTML('beforeend',badge);
+  }
 }
 function doLogout(){auth.signOut().then(()=>location.href='login.html');}
 
@@ -510,6 +532,7 @@ function renderBody(rows){
 
 // Modal
 function openModal(id){
+  if(window._staffReadOnly){ toast('📋 Staff — ดูข้อมูลได้อย่างเดียว'); return; }
   editId=id;
   const d=docs.find(x=>x._id===id); if(!d) return;
   document.getElementById('mtitle').innerHTML=`<b>${esc(d.name||'ไม่ระบุ')}</b>&nbsp;${typeTag(d.type||'')}`;
@@ -600,6 +623,8 @@ async function saveDoc(){
 
 // Delete
 async function deleteDoc(){
+  if(window._userRole!=='admin'&&window._userRole!=='viewer'){ toast('⛔ ไม่มีสิทธิ์ลบข้อมูล'); return; }
+  if(window._userRole==='viewer'){ toast('⛔ Viewer ลบไม่ได้'); return; }
   if(!confirm('ลบรายการนี้ออกจากระบบเลยไหมครับ?'))return;
   try{
     await db.collection('customers').doc(editId).delete();
@@ -631,6 +656,68 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 function setMsg(m){document.getElementById('tbody').innerHTML=`<tr><td colspan="13" class="no-data">${m}</td></tr>`;}
 let _tt;
 function toast(m){const e=document.getElementById('toastEl');e.textContent=m;e.classList.add('on');clearTimeout(_tt);_tt=setTimeout(()=>e.classList.remove('on'),3000);}
+</script>
+
+<input type="file" id="excelInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="importExcel(this)">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<script>
+async function importExcel(input){
+  const file=input.files[0]; if(!file) return;
+  const role=window._userRole;
+  if(role!=='admin'){ toast('⛔ เฉพาะ Admin เท่านั้น'); input.value=''; return; }
+  
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      if(!rows.length){ toast('⚠️ ไม่พบข้อมูลใน Excel'); return; }
+      
+      const colMap={
+        'ชื่อ':'name','ชื่อลูกค้า':'name',
+        'ประเภท':'type','ประเภทงาน':'type',
+        'เบอร์':'phone','เบอร์โทรศัพท์':'phone','เบอร์โทร':'phone',
+        'ช่องทาง':'channel','ช่องทางติดต่อ':'channel',
+        'ปัญหา':'problem','ปัญหา / ระบบ':'problem',
+        'วันที่เข้างาน':'dateStart','วันที่ช่างเข้างาน':'dateStart',
+        'วันที่เสร็จงาน':'dateEnd','วันที่ช่างเสร็จงาน':'dateEnd',
+        'ความคืบหน้า':'progress',
+        'การดำเนินการ':'action',
+        'สถานะ':'result','สถานะงาน':'result',
+        'ค่าใช้จ่าย':'cost','ค่าใช้จ่าย (บาท)':'cost',
+        'หมายเหตุ':'note',
+      };
+      
+      const batch=db.batch();
+      let count=0;
+      rows.forEach(row=>{
+        const doc={timestamp:firebase.firestore.FieldValue.serverTimestamp(),importedBy:auth.currentUser?.email||''};
+        Object.keys(row).forEach(col=>{
+          const mapped=colMap[col.trim()];
+          if(mapped) doc[mapped]=(row[col]||'').toString().trim();
+        });
+        if(!doc.name&&!doc.phone) return; // skip empty rows
+        // auto row color
+        const r=doc.result||'';
+        doc.rowColor=r.includes('จบงาน')?'#bbf7d0':r==='ตัดออก'?'#fca5a5':'';
+        batch.set(db.collection('customers').doc(),doc);
+        count++;
+      });
+      
+      if(!count){ toast('⚠️ ไม่พบข้อมูลที่นำเข้าได้'); input.value=''; return; }
+      if(!confirm('นำเข้า '+count+' รายการจาก Excel เข้า Firestore เลยไหมครับ?')){ input.value=''; return; }
+      
+      await batch.commit();
+      input.value='';
+      toast('✅ นำเข้า '+count+' รายการเรียบร้อยแล้ว');
+    }catch(err){
+      toast('⚠️ เกิดข้อผิดพลาด: '+err.message);
+      input.value='';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
 </script>
 </body>
 </html>
