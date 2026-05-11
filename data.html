@@ -293,24 +293,31 @@ auth.onAuthStateChanged(async u=>{
   }catch(e){ window._userRole='staff'; }
   applyDataRoleUI(window._userRole);
 // Show Admin buttons only
-  if(window._userRole==='admin'){
-    // --- 1. ปุ่มจัดการสิทธิ์ (เพิ่มใหม่) ---
+  // Show Admin buttons only
+if(window._userRole==='admin'){
+    // --- 1. ปุ่มจัดการสิทธิ์ ---
     const roleBtn=document.createElement('button');
     roleBtn.className='tbtn';
     roleBtn.innerHTML='🔐 จัดการสิทธิ์';
-    roleBtn.style.color='#b45309'; 
-    roleBtn.style.borderColor='#fde047';
-    roleBtn.style.background='#fef3c7'; // สีทองให้ดูพรีเมียม
+    roleBtn.style.color='#b45309'; roleBtn.style.borderColor='#fde047'; roleBtn.style.background='#fef3c7';
     roleBtn.onclick=()=>location.href='roles-admin.html';
     document.querySelector('.topbar .tbtn')?.insertAdjacentElement('beforebegin',roleBtn);
 
-    // --- 2. ปุ่ม Import Excel (ของเดิม) ---
+    // --- 2. ปุ่ม Export Excel (เพิ่มใหม่) ---
+    const exportBtn=document.createElement('button');
+    exportBtn.className='tbtn';
+    exportBtn.innerHTML='📊 Export Excel';
+    exportBtn.style.color='#166534'; exportBtn.style.borderColor='#86efac'; exportBtn.style.background='#f0fdf4';
+    exportBtn.onclick=()=>exportToExcel(); // เรียกใช้ฟังก์ชันส่งออก
+    document.querySelector('.topbar .tbtn')?.insertAdjacentElement('beforebegin',exportBtn);
+
+    // --- 3. ปุ่ม Import Excel ---
     const importBtn=document.createElement('button');
     importBtn.className='tbtn';
     importBtn.innerHTML='📥 Import Excel';
     importBtn.onclick=()=>document.getElementById('excelInput').click();
     document.querySelector('.topbar .tbtn')?.insertAdjacentElement('beforebegin',importBtn);
-  }
+}
   init();
 });
 
@@ -355,10 +362,10 @@ function toggleTheme(){
   document.getElementById('themeBtn').textContent=n==='dark'?'☀️':'🌙';
 }
 
-// Config
-const TABS=['ทั้งหมด','CI1','CI2','CS1','CS2','CW','CH','CR','✅ จบงาน','❌ ตัดออก'];
+// เพิ่ม Tab รีวิว และเปลี่ยนชื่อหัวข้อ ปัญหา
+const TABS=['ทั้งหมด','CI1','CI2','CS1','CS2','CW','CH','CR','✅ จบงาน','❌ ตัดออก','⭐ รีวิว 5 ดาว'];
 const KEYS=['timestamp','name','type','phone','channel','problem','dateStart','dateEnd','progress','action','result','cost','note'];
-const LBLS=['เวลา','ชื่อ','ประเภท','เบอร์','ช่องทาง','ปัญหา','เข้างาน','เสร็จงาน','ความคืบหน้า','การดำเนินการ','สถานะ','ค่าใช้จ่าย','หมายเหตุ'];
+const LBLS=['เวลา','ชื่อ','ประเภท','เบอร์','ช่องทาง','ปัญหา / รายละเอียดของงาน','เข้างาน','เสร็จงาน','ความคืบหน้า','การดำเนินการ','สถานะ','ค่าใช้จ่าย','หมายเหตุ'];
 
 // State
 let docs=[],activeTab='ทั้งหมด',filtered=[],editId=null,sc=0,sa=false,unsub=null;
@@ -374,8 +381,11 @@ function init(){
       const bt=b.timestamp?.toDate?b.timestamp.toDate().getTime():0;
       return bt-at;
     });
-    updateCounts(); applyTabFilter();
-  },e=>setMsg('⚠️ '+e.message));
+    
+    // เมื่อดึงข้อมูลเสร็จ ให้สั่งอัปเดตตัวเลขและคัดกรอง Tab
+    updateCounts();
+    applyTabFilter();
+  });
 }
 
 // Tabs
@@ -384,6 +394,7 @@ function buildTabs(){
     `<div class="tab${t===activeTab?' on':''}" id="t_${t}" onclick="switchTab('${t}')">${t}<span class="tab-n" id="n_${t}">0</span></div>`
   ).join('');
 }
+
 function switchTab(t){
   activeTab=t;
   document.querySelectorAll('.tab').forEach(e=>e.classList.remove('on'));
@@ -391,20 +402,36 @@ function switchTab(t){
   document.getElementById('searchEl').value='';
   applyTabFilter();
 }
+
 function updateCounts(){
   TABS.forEach(t=>{
     let n=0;
     if(t==='ทั้งหมด') n=docs.length;
     else if(t==='✅ จบงาน') n=docs.filter(d=>(d.result||'').includes('จบงาน')).length;
     else if(t==='❌ ตัดออก') n=docs.filter(d=>d.result==='ตัดออก').length;
+    else if(t==='⭐ รีวิว 5 ดาว') {
+      // ค้นหาคำว่า "รีวิว 5 ดาว" จากทั้งช่องปัญหาและช่องการดำเนินการ
+      n=docs.filter(d=> 
+        (d.problem||'').includes('รีวิว 5 ดาว') || 
+        (d.action||'').includes('รีวิว 5 ดาว')
+      ).length;
+    }
     else n=docs.filter(d=>(d.type||'').toUpperCase()===t.toUpperCase()).length;
     const e=document.getElementById('n_'+t); if(e)e.textContent=n;
   });
 }
+
 function applyTabFilter(){
   if (activeTab==='ทั้งหมด') filtered=[...docs];
   else if (activeTab==='✅ จบงาน') filtered=docs.filter(d=>(d.result||'').includes('จบงาน'));
   else if (activeTab==='❌ ตัดออก') filtered=docs.filter(d=>d.result==='ตัดออก');
+  else if (activeTab==='⭐ รีวิว 5 ดาว') {
+    // กรองเอาเฉพาะที่มีคำว่า "รีวิว 5 ดาว"
+    filtered=docs.filter(d=> 
+      (d.problem||'').includes('รีวิว 5 ดาว') || 
+      (d.action||'').includes('รีวิว 5 ดาว')
+    );
+  }
   else filtered=docs.filter(d=>(d.type||'').toUpperCase()===activeTab.toUpperCase());
   applyFilter();
 }
@@ -924,6 +951,37 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 function setMsg(m){document.getElementById('tbody').innerHTML=`<tr><td colspan="13" class="no-data">${m}</td></tr>`;}
 let _tt;
 function toast(m){const e=document.getElementById('toastEl');e.textContent=m;e.classList.add('on');clearTimeout(_tt);_tt=setTimeout(()=>e.classList.remove('on'),3000);}
+
+// ฟังก์ชันส่งออกข้อมูลเป็นไฟล์ Excel
+function exportToExcel() {
+  if (window._userRole !== 'admin') { toast('⛔ เฉพาะ Admin เท่านั้นที่ส่งออกข้อมูลได้'); return; }
+  
+  toast('⏳ กำลังเตรียมไฟล์...');
+  
+  // เตรียมข้อมูล: ดึงข้อมูลจากตารางที่แสดงผลอยู่ (ตาม Tab หรือคำค้นหาที่คัดกรองไว้)
+  const dataToExport = filtered.map(d => {
+    const row = {};
+    LBLS.forEach((lbl, i) => {
+      let val = d[KEYS[i]];
+      // แปลงเวลา Firebase ให้เป็นข้อความปกติ
+      if (KEYS[i] === 'timestamp' && val?.toDate) val = fmtDate(val.toDate());
+      row[lbl] = val || '';
+    });
+    return row;
+  });
+
+  if (dataToExport.length === 0) { toast('⚠️ ไม่มีข้อมูลให้ส่งออก'); return; }
+
+  const ws = XLSX.utils.json_to_sheet(dataToExport);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "CustomerData");
+  
+  // ชื่อไฟล์ตามวันที่ปัจจุบัน
+  const fileName = `AdvancePlus_Report_${new Date().toISOString().slice(0,10)}.xlsx`;
+  XLSX.writeFile(wb, fileName);
+  toast('📂 ส่งออกไฟล์เรียบร้อย!');
+}
+
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>

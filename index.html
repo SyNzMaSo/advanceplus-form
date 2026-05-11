@@ -791,11 +791,11 @@
       </div>
 
       <!-- ความคืบหน้า -->
-      <div class="fg">
+<div class="fg">
         <label for="f_progress">ความคืบหน้า (ฝั่งผู้กรอก) <span class="req">*</span></label>
         <div class="input-wrap">
           <svg class="input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          <select id="f_progress" onchange="updateFilled(this)">
+          <select id="f_progress" onchange="onProgressChange()">
             <option value="" disabled selected>เลือกสถานะ</option>
             <option value="อยู่ระหว่างการดำเนินการ">🟡 อยู่ระหว่างการดำเนินการ</option>
             <option value="รอลูกค้าตอบกลับ">⏳ รอลูกค้าตอบกลับ</option>
@@ -803,13 +803,17 @@
             <option value="รอสั่งอะไหล่">🔩 รอสั่งอะไหล่</option>
             <option value="สำเร็จ">✅ สำเร็จ</option>
             <option value="ไม่สำเร็จ">❌ ไม่สำเร็จ</option>
+            <option value="อื่นๆ">📝 อื่นๆ</option>
           </select>
           <span class="sel-arrow">▾</span>
         </div>
+        <div class="fg" id="fg_progress_other" style="display:none; margin-top:8px;">
+          <input type="text" class="cz-input" id="f_progress_other" placeholder="ระบุความคืบหน้าเพิ่มเติม..." oninput="updateFilled(this)">
+        </div>
         <div class="err-msg" id="err_progress"><svg width="10" height="10" viewBox="0 0 24 24" fill="var(--red)"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16v.5" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>กรุณาเลือกความคืบหน้า</div>
+        <div class="err-msg" id="err_progress_other"><svg width="10" height="10" viewBox="0 0 24 24" fill="var(--red)"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16v.5" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>กรุณาระบุความคืบหน้า</div>
       </div>
 
-      <!-- การดำเนินการ -->
       <div class="fg">
         <label for="f_action"><span id="fLblAction">การดำเนินการ</span> <span class="req">*</span></label>
         <div class="input-wrap">
@@ -827,6 +831,7 @@
             <option>รอสั่งอะไหล่</option>
             <option>นัดหมายครั้งถัดไป</option>
             <option>แจ้งผลให้ลูกค้าทราบ</option>
+            <option value="ส่งรีวิว 5 ดาว">🌟 ส่งรีวิว 5 ดาว</option>
             <option>อื่นๆ</option>
           </select>
           <span class="sel-arrow">▾</span>
@@ -843,7 +848,6 @@
         <div class="err-msg" id="err_action_other"><svg width="10" height="10" viewBox="0 0 24 24" fill="var(--red)"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16v.5" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>กรุณาระบุการดำเนินการ</div>
       </div>
 
-      <!-- สถานะงาน -->
       <div class="fg">
         <label for="f_result">สถานะงาน (ฝั่ง Advance Plus และลูกค้า) <span class="opt">ไม่บังคับ</span></label>
         <div class="input-wrap">
@@ -858,8 +862,12 @@
             <option value="รอลูกค้าชำระ">💳 รอลูกค้าชำระ</option>
             <option value="ลูกค้ายกเลิก">🚫 ลูกค้ายกเลิก</option>
             <option value="ตัดออก">❌ ตัดออก</option>
+            <option value="อื่นๆ">📝 อื่นๆ</option>
           </select>
           <span class="sel-arrow">▾</span>
+        </div>
+        <div class="fg" id="fg_result_other" style="display:none; margin-top:8px;">
+          <input type="text" class="cz-input" id="f_result_other" placeholder="ระบุสถานะงานเพิ่มเติม..." oninput="updateFilled(this)">
         </div>
       </div>
 
@@ -1018,64 +1026,134 @@ phoneInput.addEventListener('paste', function(e) {
   this.dispatchEvent(new Event('input'));
 });
 
-// ─── AUTOFILL ───
+// ─── 🤖 CONSOLIDATED AUTOFILL SYSTEM (Firestore Only) ───
 let _autofillTimer = null;
-let _lastLookedUp  = '';
+let _lastLookedUp = '';
 
-phoneInput.addEventListener('input', function() {
-  const phone = this.value.trim();
-  const zone  = document.getElementById('autofill_zone');
-  clearTimeout(_autofillTimer);
-  if (phone.length < 10) { zone.innerHTML = ''; _lastLookedUp = ''; return; }
-  if (phone === _lastLookedUp) return;
-  // แสดง searching indicator
-  zone.innerHTML = `<div class="autofill-searching"><div class="autofill-spinner"></div>กำลังค้นหาข้อมูลลูกค้า...</div>`;
-  _autofillTimer = setTimeout(() => doAutofill(phone), 500);
+// Listen to Name and Phone inputs
+['f_name', 'f_phone'].forEach(id => {
+  document.getElementById(id).addEventListener('input', function() {
+    const val = this.value.trim();
+    const zone = document.getElementById('autofill_zone');
+    clearTimeout(_autofillTimer);
+    
+    // Minimum length check
+    if (val.length < (id === 'f_phone' ? 10 : 3)) {
+      zone.innerHTML = ''; _lastLookedUp = ''; return;
+    }
+    if (val === _lastLookedUp) return;
+
+    zone.innerHTML = `<div class="autofill-searching"><div class="autofill-spinner"></div>กำลังค้นหาข้อมูลลูกค้าเก่า...</div>`;
+    _autofillTimer = setTimeout(() => searchCustomerData(id === 'f_phone' ? 'phone' : 'name', val), 600);
+  });
 });
 
-async function doAutofill(phone) {
+async function searchCustomerData(field, value) {
   const zone = document.getElementById('autofill_zone');
-  _lastLookedUp = phone;
+  _lastLookedUp = value;
   try {
-    const url = APPS_SCRIPT_URL + '?action=lookup&phone=' + encodeURIComponent(phone);
-    const res  = await fetch(url, { method:'GET', mode:'cors' });
-    const data = await res.json();
-    if (data.status === 'found' && data.customer) {
-      const c = data.customer;
+    let qValue = value;
+    if(field === 'phone') {
+      const pre = document.getElementById('f_phone_prefix').value;
+      qValue = pre + value; // CI081...
+    }
+
+    const snap = await db.collection('customers')
+      .where(field, '==', qValue)
+      .orderBy('timestamp', 'desc').limit(1).get();
+
+    if (!snap.empty) {
+      const c = snap.docs[0].data();
       zone.innerHTML = `
-        <div class="autofill-card" onclick="applyAutofill(${JSON.stringify(c).replace(/"/g,'&quot;')})">
+        <div class="autofill-card" onclick='applyAutofill(${JSON.stringify(c).replace(/'/g, "&apos;")})'>
           <div class="autofill-avatar">👤</div>
           <div class="autofill-info">
-            <div class="autofill-name">${c.name}</div>
-            <div class="autofill-meta">📋 ประเภทล่าสุด: ${c.type||'—'} &nbsp;·&nbsp; 🕐 ${c.lastDate||'—'}</div>
+            <div class="autofill-name">${c.name || 'ไม่ระบุชื่อ'}</div>
+            <div class="autofill-meta">📱 ${c.phone || '—'} &nbsp;·&nbsp; 📋 ${c.type || '—'}</div>
           </div>
-          <button class="autofill-btn" onclick="event.stopPropagation();applyAutofill(${JSON.stringify(c).replace(/"/g,'&quot;')})">เติมข้อมูล</button>
+          <button class="autofill-btn">ดึงข้อมูล</button>
         </div>`;
     } else {
-      zone.innerHTML = `<div class="autofill-searching" style="color:var(--txt-dim)">🔍 ไม่พบข้อมูลลูกค้าเดิม — กรอกข้อมูลใหม่</div>`;
-      setTimeout(() => { zone.innerHTML = ''; }, 2500);
+      zone.innerHTML = `<div class="autofill-searching" style="color:var(--txt-dim)">🔍 ลูกค้าใหม่ — ไม่พบข้อมูลเดิม</div>`;
+      setTimeout(() => { zone.innerHTML = ''; }, 3000);
     }
-  } catch(e) {
-    zone.innerHTML = '';
-  }
+  } catch(e) { zone.innerHTML = ''; }
 }
 
 function applyAutofill(c) {
-  const nameEl = document.getElementById('f_name');
-  if (c.name)    { nameEl.value = c.name; updateFilled(nameEl); }
-  if (c.channel) {
-    const chEl = document.getElementById('f_channel');
-    chEl.value = c.channel; updateFilled(chEl);
+  if (c.name) { document.getElementById('f_name').value = c.name; updateFilled(document.getElementById('f_name')); }
+  if (c.channel) { document.getElementById('f_channel').value = c.channel; updateFilled(document.getElementById('f_channel')); }
+  if (c.phone) {
+    const p = c.phone.toString();
+    const pre = p.match(/^(CI|CS|CW|CH|CR)/i);
+    if (pre) {
+      document.getElementById('f_phone_prefix').value = pre[0].toUpperCase();
+      document.getElementById('f_phone').value = p.slice(pre[0].length);
+    } else {
+      document.getElementById('f_phone').value = p;
+    }
+    updatePhoneDots();
   }
   if (c.type) {
-    const typeEl = document.getElementById('f_type');
-    typeEl.value = c.type; updateFilled(typeEl);
+    document.getElementById('f_type').value = c.type;
+    updateFilled(document.getElementById('f_type'));
     onTypeChange();
   }
-  // แสดง feedback
-  const zone = document.getElementById('autofill_zone');
-  zone.innerHTML = `<div class="autofill-searching" style="color:var(--g-md)">✅ เติมข้อมูลเรียบร้อยแล้ว</div>`;
-  setTimeout(() => { zone.innerHTML = ''; }, 2000);
+  document.getElementById('autofill_zone').innerHTML = `<div class="autofill-searching" style="color:var(--g-md)">✅ เติมข้อมูลเรียบร้อย</div>`;
+  setTimeout(() => { document.getElementById('autofill_zone').innerHTML = ''; }, 2000);
+}
+
+// ─── 🔗 ลิงก์ Prefix เบอร์โทร กับ ประเภทงาน (CI, CS, CW...) ───
+(function(){
+  const prefixEl = document.getElementById('f_phone_prefix');
+  const typeEl   = document.getElementById('f_type');
+  
+  // 1. เมื่อเปลี่ยน Prefix ด้านหน้าเบอร์โทร
+  prefixEl.addEventListener('change', function(){
+    updateFilled(this);
+    const pre = this.value;
+    // ซ่อน/แสดง ตัวเลือกในประเภทงาน ให้ตรงกับ Prefix
+    Array.from(typeEl.options).forEach(o => { o.hidden = !!(o.value && !o.value.startsWith(pre)); });
+    
+    // ถ้าประเภทงานที่เลือกไว้ ไม่ตรงกับ Prefix ให้ล้างค่าทิ้ง
+    if (typeEl.value && !typeEl.value.startsWith(pre)){ 
+        typeEl.value=''; 
+        onTypeChange(); 
+    }
+    
+    // ถ้าเป็น CW, CH, CR ให้เลือกประเภทอัตโนมัติเลยเพราะมีตัวเลือกเดียว
+    const singleMap = {'CW':'CW','CH':'CH','CR':'CR','CI':null,'CS':null};
+    if (pre in singleMap && singleMap[pre]) {
+      typeEl.value = singleMap[pre];
+      updateFilled(typeEl);
+      onTypeChange();
+    }
+  });
+
+  // 2. เมื่อเปลี่ยน ประเภทงาน (ให้ Prefix เปลี่ยนตาม)
+  typeEl.addEventListener('change', function(){
+    if (!this.value) return;
+    // ตัดตัวเลขออก (เช่น CI1 -> ดึงมาแค่ CI)
+    const pre = this.value.replace(/\d+$/,'');
+    if (pre && prefixEl.value !== pre) {
+        prefixEl.value = pre;
+        updateFilled(prefixEl);
+    }
+  });
+})();
+
+// ─── 🔄 NEW CHANGE HANDLERS (For "Others") ───
+function onProgressChange() {
+  const val = document.getElementById('f_progress').value;
+  _show('fg_progress_other', val === 'อื่นๆ');
+  updateFilled(document.getElementById('f_progress'));
+  hideErr('f_progress', 'err_progress');
+}
+
+function onResultChange() {
+  const val = document.getElementById('f_result').value;
+  _show('fg_result_other', val === 'อื่นๆ');
+  updateFilled(document.getElementById('f_result'));
 }
 
 function _show(id, visible) {
@@ -1100,51 +1178,90 @@ function _resetCascadeFields() {
 
 // ─── CASCADING DROPDOWNS DATA ───
 const SUB_CATS = {
-  'กล้อง Digital':     ['กล้องดับ (น้อยกว่า 4 ตัว)','กล้องดับ (มากกว่า 4 ตัว)','กล้องเสีย','กล้องมีเสียงร้อง','กล้องติดๆ ดับๆ','กล้องไม่ออนไลน์','ดูย้อนหลังไม่ได้','ภาพเบลอ','สัญญาณหลุด','ภาพไม่ขึ้น','อื่นๆ'],
-  'กล้อง Analog':      ['กล้องดับ (น้อยกว่า 4 ตัว)','กล้องดับ (มากกว่า 4 ตัว)','กล้องเสีย','กล้องมีเสียงร้อง','กล้องติดๆ ดับๆ','กล้องไม่ออนไลน์','ดูย้อนหลังไม่ได้','ภาพเบลอ','สัญญาณหลุด','สัญญาณรบกวน','อื่นๆ'],
-// ─── NVR sub-cat fix ───
-  'เครื่องบันทึก NVR': ['ไฟไม่ขึ้น','เครื่องพัง','HDD Error','Adapter เสีย','สาย SATA มีปัญหา','บันทึกไม่ได้','ภาพไม่แสดง','อื่นๆ'],
-  'ระบบ Network':      ['อินเทอร์เน็ตขัดข้อง','สัญญาณ Wi-Fi หลุด','อุปกรณ์ไม่ออนไลน์','Port / Switch เสีย','อื่นๆ'],
-  'อื่นๆ':             ['ไม่ทำงาน','เสียหาย','ขาด / หาย','ต้องการเพิ่มเติม','อื่นๆ'],
+  'กล้อง Digital': ['กล้องดับ (น้อยกว่า 4 ตัว)','กล้องดับ (มากกว่า 4 ตัว)','กล้องเสีย','กล้องมีเสียงร้อง','กล้องติดๆ ดับๆ','กล้องไม่ออนไลน์','ดูย้อนหลังไม่ได้','ภาพเบลอ','สัญญาณหลุด','ภาพไม่ขึ้น'],
+  'กล้อง Analog':  ['กล้องดับ (น้อยกว่า 4 ตัว)','กล้องดับ (มากกว่า 4 ตัว)','กล้องเสีย','กล้องมีเสียงร้อง','กล้องติดๆ ดับๆ','กล้องไม่ออนไลน์','ดูย้อนหลังไม่ได้','ภาพเบลอ','สัญญาณหลุด','สัญญาณรบกวน'],
+  'เครื่องบันทึก NVR': ['ไฟไม่ขึ้น','เครื่องพัง','HDD Error','Adapter เสีย','สาย SATA มีปัญหา','บันทึกไม่ได้','ภาพไม่แสดง'],
+  'ระบบ Network':  ['อินเทอร์เน็ตขัดข้อง','สัญญาณ Wi-Fi หลุด','อุปกรณ์ไม่ออนไลน์','Port / Switch เสีย'],
+  'อื่นๆ':          ['ไม่ทำงาน','เสียหาย','ขาด / หาย','ต้องการเพิ่มเติม']
 };
 
+// ─── 1. ฟังก์ชันเปลี่ยนประเภทงาน (CI / CS / ฯลฯ) ───
+function onTypeChange() {
+  const val = document.getElementById('f_type').value;
+  if (!val) return;
+  
+  // ล้างสถานะ Error
+  hideErr('f_type','err_type');
+  updateFilled(document.getElementById('f_type'));
+
+  // ตรวจสอบว่าเป็นงานกลุ่ม CI หรือไม่
+  const isCI = val.startsWith('CI');
+  
+  // สั่งเปิด/ปิดกล่องข้อมูลตามเงื่อนไข
+  _show('fg_main_cat', true);        // ระบบ/ประเภทปัญหา (เปิดเสมอ)
+  _show('fg_site_type', isCI);      // ลักษณะหน้างาน (เปิดเฉพาะ CI)
+  _show('fg_points', isCI);         // จำนวนจุด (เปิดเฉพาะ CI)
+  _show('fg_sub_cat', !isCI);       // ปัญหา/อาการ (เปิดเฉพาะ CS/อื่นๆ)
+  
+  // ล้างค่าในช่องที่ถูกซ่อนเพื่อความสะอาดของข้อมูล
+  _resetCascadeFields();
+}
+
+// ─── 2. ฟังก์ชันเปลี่ยนระบบ/ประเภทปัญหา (กล้อง, เครื่องบันทึก ฯลฯ) ───
 function onMainCatChange() {
-  const val = document.getElementById('f_main_cat').value;
-  updateFilled(document.getElementById('f_main_cat'));
+  const mc = document.getElementById('f_main_cat').value;
+  if(!mc) return;
+  
   hideErr('f_main_cat','err_main_cat');
+  updateFilled(document.getElementById('f_main_cat'));
+  
+  // แสดงช่อง "อื่นๆ" ถ้าเลือกหัวข้ออื่นๆ
+  _show('fg_main_cat_other', mc === 'อื่นๆ');
 
-  const isOther = val === 'อื่นๆ';
-  _show('fg_main_cat_other', isOther);
-  if (!isOther) {
-    document.getElementById('f_main_cat_other').value = '';
-    hideErr('f_main_cat_other','err_main_cat_other');
-  }
-
-  // Populate sub-cat for CS/CW/CH/CR only
-  const type = document.getElementById('f_type').value;
-  if (type && !type.startsWith('CI')) {
-    const subSel = document.getElementById('f_sub_cat');
-    const opts   = SUB_CATS[val] || SUB_CATS['อื่นๆ'];
-    subSel.innerHTML = '<option value="" disabled selected>— เลือกปัญหา —</option>' +
-      opts.map(o => `<option>${o}</option>`).join('');
-    subSel.disabled = false; subSel.value = ''; subSel.classList.remove('has-val');
-    _show('fg_sub_cat_other', false);
-    document.getElementById('f_sub_cat_other').value = '';
-    hideErr('f_sub_cat','err_sub_cat');
-    hideErr('f_sub_cat_other','err_sub_cat_other');
+  // อัปเดตรายชื่อ "ปัญหา/อาการ" (Sub Category) ให้ตรงกับระบบที่เลือก
+  const subSel = document.getElementById('f_sub_cat');
+  if(subSel) {
+    const opts = SUB_CATS[mc] || [];
+    let h = '<option value="">— เลือกปัญหา —</option>';
+    opts.forEach(o => h += `<option value="${o}">${o}</option>`);
+    h += '<option value="อื่นๆ">อื่นๆ</option>';
+    subSel.innerHTML = h;
+    subSel.disabled = false; // <--- เพิ่มคำสั่งปลดล็อกให้เลือกได้ตรงนี้ครับ!
   }
 }
 
+// ─── 3. ฟังก์ชันเสริมสำหรับการซ่อน/แสดงผล (สำคัญมาก!) ───
+function _show(id, b) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.style.display = b ? 'block' : 'none';
+    // ถ้าสั่งซ่อน ให้ล้างค่าข้างในด้วย
+    if(!b) {
+      const inp = el.querySelector('input, select, textarea');
+      if(inp) inp.value = '';
+    }
+  }
+}
+
+function _resetCascadeFields() {
+  // ล้างค่าพวกช่อง Other ที่อาจจะค้างอยู่
+  const others = ['f_main_cat_other', 'f_sub_cat_other', 'f_points_other'];
+  others.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+    const group = document.getElementById('fg_' + id.split('_').slice(1).join('_'));
+    if(group) group.style.display = 'none';
+  });
+}
+
+// ฟังก์ชันอื่นๆ สำหรับช่อง "อื่นๆ" (ให้คงไว้เพื่อให้ระบบทำงานครบ)
 function onSubCatChange() {
   const val = document.getElementById('f_sub_cat').value;
-  updateFilled(document.getElementById('f_sub_cat'));
-  hideErr('f_sub_cat','err_sub_cat');
-  const isOther = val === 'อื่นๆ';
-  _show('fg_sub_cat_other', isOther);
-  if (!isOther) {
-    document.getElementById('f_sub_cat_other').value = '';
-    hideErr('f_sub_cat_other','err_sub_cat_other');
-  }
+  _show('fg_sub_cat_other', val === 'อื่นๆ');
+}
+function onPointsChange() {
+  const val = document.getElementById('f_points').value;
+  _show('fg_points_other', val === 'อื่นๆ');
 }
 
 // ─── BUILD PROBLEM STRING FOR SUBMIT ───
@@ -1297,30 +1414,55 @@ function showToastMsg(msg) {
 
 // ─── RESET ───
 function resetForm() {
-  ['f_name','f_phone','f_phone_prefix','f_type','f_channel','f_date_start','f_progress','f_action','f_result','f_cost','f_note','f_date_end'].forEach(id=>{
-    const el=document.getElementById(id); if(el){el.value='';el.classList.remove('has-val');}
+  // 1. ล้างค่าช่องกรอกทั้งหมด รวมถึงช่อง "อื่นๆ" ที่เพิ่งสร้างใหม่
+  const allInputs = [
+    'f_name','f_phone','f_phone_prefix','f_type','f_channel','f_date_start',
+    'f_progress','f_progress_other',
+    'f_action','f_action_other',
+    'f_result','f_result_other',
+    'f_cost','f_note','f_date_end'
+  ];
+  allInputs.forEach(id => {
+    const el = document.getElementById(id); 
+    if(el) { el.value = ''; el.classList.remove('has-val'); }
   });
-  phoneDots.forEach(d=>{ d.style.background=''; });
-  document.getElementById('phoneRemain').textContent='';
-  document.getElementById('phoneFilled').textContent='';
-  document.getElementById('destIndicator').classList.remove('show');
-  document.getElementById('cc_action').textContent='0 / 300';
-  // Reset action fields
-  ['f_action','f_action_other'].forEach(id=>{ const el=document.getElementById(id); if(el){el.value='';el.classList.remove('has-val');} });
+  
+  // 2. สั่งซ่อนช่อง "อื่นๆ" ให้กลับไปพับเก็บเหมือนเดิม
+  _show('fg_progress_other', false);
+  _show('fg_result_other', false);
   _show('fg_action_other', false);
-  hideErr('f_action','err_action'); hideErr('f_action_other','err_action_other');
-  // Reset cascade fields and hide all dynamic groups
-  _show('fg_main_cat', false); _show('fg_site_type', false);
-  _show('fg_points', false);   _show('fg_sub_cat', false);
-  _resetCascadeFields();
+  
+  // 3. รีเซ็ตระบบที่ลิงก์กัน (ช่องหน้างาน/อาการ)
+  _show('fg_main_cat', false); 
+  _show('fg_site_type', false);
+  _show('fg_points', false);   
+  _show('fg_sub_cat', false);
+  if (typeof _resetCascadeFields === 'function') _resetCascadeFields();
 
-  // Reset uploads
-  ['cc','tech','admin'].forEach(role => {
-    UPLOAD_FILES[role] = [];
-    renderPreviews(role);
+  // 4. ล้างการนับตัวอักษร
+  const ccAction = document.getElementById('cc_action');
+  if(ccAction) ccAction.textContent = '0 / 300';
+  
+  // 5. ล้างจุดสีเขียว/แดงของเบอร์โทร
+  if (typeof phoneDots !== 'undefined') {
+    phoneDots.forEach(d => { d.style.background = ''; });
+  }
+  const phoneRemain = document.getElementById('phoneRemain');
+  if(phoneRemain) phoneRemain.textContent = '';
+  const phoneFilled = document.getElementById('phoneFilled');
+  if(phoneFilled) phoneFilled.textContent = '';
+
+  // 6. ล้างรูปภาพแนบ
+  ['cc','tech','admin'].forEach(role => { 
+    if (typeof UPLOAD_FILES !== 'undefined' && UPLOAD_FILES[role]) {
+        UPLOAD_FILES[role] = []; 
+        if (typeof renderPreviews === 'function') renderPreviews(role); 
+    }
   });
-  document.querySelectorAll('.field-err').forEach(el=>el.classList.remove('field-err'));
-  document.querySelectorAll('.err-msg.show').forEach(el=>el.classList.remove('show'));
+  
+  // 7. ล้างกรอบสีแดงแจ้งเตือนที่ค้างอยู่
+  document.querySelectorAll('.field-err').forEach(el => el.classList.remove('field-err'));
+  document.querySelectorAll('.err-msg.show').forEach(el => el.classList.remove('show'));
 }
 
 // ─── SUBMIT ───
@@ -1351,63 +1493,15 @@ function applyRoleRestrictions(role){
     if(badge) badge.insertAdjacentHTML('beforeend','&nbsp;<span style="font-size:.61rem;padding:1px 6px;border-radius:10px;background:#fef3c7;color:#b45309;border:1px solid #fde047;">👑 Admin</span>');
   }
 }
-function onResultChange(){ updateFilled(document.getElementById('f_result')); }
+function onResultChange() {
+  const val = document.getElementById('f_result').value;
+  // สั่งให้กล่องพิมพ์ "อื่นๆ" โผล่มาเมื่อเลือก อื่นๆ
+  const otherGroup = document.getElementById('fg_result_other');
+  if(otherGroup) otherGroup.style.display = (val === 'อื่นๆ') ? 'block' : 'none';
+  updateFilled(document.getElementById('f_result'));
+}
 
-// ─── AUTOFILL ชื่อ → เบอร์ ───
-let _nameTimer=null;
-document.getElementById('f_name').addEventListener('input', function(){
-  updateFilled(this);
-  const name=this.value.trim();
-  clearTimeout(_nameTimer);
-  if(name.length<2)return;
-  _nameTimer=setTimeout(async()=>{
-    try{
-      const snap=await db.collection('customers')
-        .where('name','==',name).orderBy('timestamp','desc').limit(1).get();
-      if(!snap.empty){
-        const d=snap.docs[0].data();
-        if(d.phone){
-          const phone=d.phone.toString().trim();
-          // แยก prefix กับตัวเลข
-          const prefixEl=document.getElementById('f_phone_prefix');
-          const phoneEl=document.getElementById('f_phone');
-          const pre=phone.match(/^(CI|CS|CW|CH|CR)/i);
-          if(pre){
-            prefixEl.value=pre[0].toUpperCase();
-            phoneEl.value=phone.slice(pre[0].length);
-          } else {
-            phoneEl.value=phone;
-          }
-          phoneEl.dispatchEvent(new Event('input'));
-          updateFilled(prefixEl);
-        }
-      }
-    }catch(e){}
-  },600);
-});
-(function(){
-  const prefixEl = document.getElementById('f_phone_prefix');
-  const typeEl   = document.getElementById('f_type');
-  prefixEl.addEventListener('change', function(){
-    updateFilled(this);
-    const pre = this.value;
-    // show/hide type options
-    Array.from(typeEl.options).forEach(o => { o.hidden = !!(o.value && !o.value.startsWith(pre)); });
-    if (typeEl.value && !typeEl.value.startsWith(pre)){ typeEl.value=''; onTypeChange(); }
-    // CW/CH/CR have only one option → auto-select
-    const singleMap = {'CW':'CW','CH':'CH','CR':'CR','CI':null,'CS':null};
-    if (pre in singleMap && singleMap[pre]) {
-      typeEl.value = singleMap[pre];
-      updateFilled(typeEl);
-      onTypeChange();
-    }
-  });
-  typeEl.addEventListener('change', function(){
-    if (!this.value) return;
-    const pre = this.value.replace(/\d+$/,'');
-    if (pre && prefixEl.value !== pre) prefixEl.value = pre;
-  });
-})();
+
 
 // ─── IMAGE COMPRESS (max 200KB each) ───
 async function compressImage(file, maxKB=200){
@@ -1508,8 +1602,17 @@ function clearTicket() {
   resetForm();
 }
 function _getPayload() {
-  const prefix   = document.getElementById('f_phone_prefix').value;
+  const prefix = document.getElementById('f_phone_prefix').value;
   const rawPhone = document.getElementById('f_phone').value.trim();
+  
+  // ดึงค่าความคืบหน้า (ถ้าเลือกอื่นๆ ให้เอาข้อความที่พิมพ์มาใช้)
+  const progSel = document.getElementById('f_progress').value;
+  const progVal = (progSel === 'อื่นๆ') ? document.getElementById('f_progress_other').value.trim() : progSel;
+  
+  // ดึงค่าสถานะงาน (ถ้าเลือกอื่นๆ ให้เอาข้อความที่พิมพ์มาใช้)
+  const resSel = document.getElementById('f_result').value;
+  const resVal = (resSel === 'อื่นๆ') ? document.getElementById('f_result_other').value.trim() : resSel;
+
   return {
     name:      document.getElementById('f_name').value.trim(),
     type:      document.getElementById('f_type').value,
@@ -1518,14 +1621,13 @@ function _getPayload() {
     problem:   getProblemValue(),
     dateStart: document.getElementById('f_date_start').value,
     dateEnd:   document.getElementById('f_date_end')?.value || '',
-    progress:  document.getElementById('f_progress').value,
+    progress:  progVal, 
     action:    getActionValue(),
-    result:    document.getElementById('f_result').value,
+    result:    resVal,  
     cost:      document.getElementById('f_cost')?.value.trim() || '',
     note:      document.getElementById('f_note')?.value.trim() || '',
   };
 }
-
 async function _doSubmit(btnId, sectionLabel) {
   if (_isSubmitting) return false;
   const btn = document.getElementById(btnId);
@@ -1654,6 +1756,9 @@ async function handleSubmitCC() {
   }
 
   check('f_progress', 'err_progress', 'ความคืบหน้า');
+  if (document.getElementById('f_progress').value === 'อื่นๆ') {
+    check('f_progress_other', 'err_progress_other', 'ระบุความคืบหน้า');
+  }
 
   check('f_action', 'err_action', 'การดำเนินการ');
   if (document.getElementById('f_action').value === 'อื่นๆ') {
