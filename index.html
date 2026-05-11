@@ -655,8 +655,8 @@
           <svg class="input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 10h12M4 14h8"/></svg>
           <select id="f_type" onchange="onTypeChange()">
             <option value="" disabled selected>— เลือกประเภท —</option>
-            <option value="CI1">CI1 — ติดตั้ง 4 กล้องขึ้นไป</option>
-            <option value="CI2">CI2 — ติดตั้ง 1 กล้องขึ้นไป</option>
+            <option value="CI1">CI1 — ติดตั้งมากกว่า 4</option>
+            <option value="CI2">CI2 — ติดตั้งมากกว่า 1</option>
             <option value="CS1">CS1 — เซอร์วิสข้างนอก</option>
             <option value="CS2">CS2 — เซอร์วิสออนไลน์</option>
             <option value="CR">CR — ลูกค้าปลีก / ลูกค้าส่ง</option>
@@ -1624,7 +1624,8 @@ function _getPayload() {
     progress:  progVal, 
     action:    getActionValue(),
     result:    resVal,  
-    cost:      document.getElementById('f_cost')?.value.trim() || '',
+    // ปรับตรงนี้: ถ้าไม่มีการกรอกค่า (trim แล้วว่าง) ให้ส่ง '0' ไปแทน
+    cost:      document.getElementById('f_cost')?.value.trim() || '0', 
     note:      document.getElementById('f_note')?.value.trim() || '',
   };
 }
