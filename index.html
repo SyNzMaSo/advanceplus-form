@@ -951,7 +951,7 @@
     if (typeof loadCZ === 'function') loadCZ();
     // ── fetch role ──
     try {
-      const roleDoc = await db.collection('roles').doc(user.email).get();
+      const roleDoc = await db.collection('roles').doc(user.email.toLowerCase()).get();
       window._userRole = roleDoc.exists ? (roleDoc.data().role || 'staff') : 'staff';
     } catch(e) {
       window._userRole = 'staff';
@@ -1351,9 +1351,6 @@ let _lastSubmitTime = 0;
 // staff  = กรอกฟอร์ม + ดู data (ลบไม่ได้)
 // viewer = ดู data อย่างเดียว ไม่กรอก
 function applyRoleRestrictions(role){
-  // staff  = กรอกฟอร์มได้ + เปิด data.html ได้แต่ดูอย่างเดียว (ไม่แก้/ลบ)
-  // viewer = กรอกฟอร์มไม่ได้ + เปิด data.html แก้ไขได้แต่ลบไม่ได้
-  // admin  = ทุกอย่าง
   window._userRole = role;
   const badge = document.getElementById('userNameBadge');
   if (role === 'staff') {
@@ -1364,6 +1361,9 @@ function applyRoleRestrictions(role){
     const btn = document.getElementById('submitBtn_cc');
     if(btn){btn.disabled=true;btn.innerHTML='🔒 Viewer — ไม่มีสิทธิ์กรอก';}
     if(badge) badge.insertAdjacentHTML('beforeend','&nbsp;<span style="font-size:.61rem;padding:1px 6px;border-radius:10px;background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd;">👁️ Viewer</span>');
+  } else if (role === 'admin') {
+    // เพิ่มเงื่อนไขให้แสดงป้าย Admin ตรงนี้
+    if(badge) badge.insertAdjacentHTML('beforeend','&nbsp;<span style="font-size:.61rem;padding:1px 6px;border-radius:10px;background:#fef3c7;color:#b45309;border:1px solid #fde047;">👑 Admin</span>');
   }
 }
 function onResultChange(){ updateFilled(document.getElementById('f_result')); }

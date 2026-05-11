@@ -77,7 +77,7 @@ function doLogout(){auth.signOut().then(()=>location.href='login.html');}
 
 auth.onAuthStateChanged(async u=>{
   if(!u){location.href='login.html';return;}
-  const rd=await db.collection('roles').doc(u.email).get();
+  const rd=await db.collection('roles').doc(u.email.toLowerCase())
   const role=rd.exists?(rd.data().role||'staff'):'staff';
   if(role!=='admin'){
     document.getElementById('mainWrap').style.display='none';
@@ -100,7 +100,7 @@ async function loadUsers(){
       <span class="role-badge ${roleClass[r]}">${roleName[r]||r}</span>
       <select class="role-sel" onchange="changeRole('${email}',this.value)">
         <option value="staff" ${r==='staff'?'selected':''}>Staff</option>
-        <option value="admin" ${r==="admin"?'selected':''}>Admin</option>
+        <option value="admin" ${r==='admin'?'selected':''}>Admin</option>
         <option value="viewer" ${r==='viewer'?'selected':''}>Viewer</option>
       </select>
       <button class="del-btn" onclick="removeUser('${email}')">✕</button>

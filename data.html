@@ -286,7 +286,7 @@ auth.onAuthStateChanged(async u=>{
   document.getElementById('userEl').textContent='👤 '+(u.displayName||u.email.split('@')[0]);
   // fetch role
   try{
-    const rd=await db.collection('roles').doc(u.email).get();
+    const rd=await db.collection('roles').doc(u.email.toLowerCase()).get();
     window._userRole = rd.exists?(rd.data().role||'staff'):'staff';
   }catch(e){ window._userRole='staff'; }
   applyDataRoleUI(window._userRole);
@@ -304,23 +304,27 @@ auth.onAuthStateChanged(async u=>{
 function applyDataRoleUI(role){
   window._userRole=role;
   if(role==='staff'){
-    // staff ดูอย่างเดียว - ซ่อนปุ่มแก้ไข ลบ และปิด modal บันทึก
     window._staffReadOnly=true;
     document.querySelectorAll('.del-sel-btn').forEach(el=>el.style.display='none');
   } else if(role==='viewer'){
-    // viewer แก้ไขได้ ลบไม่ได้
     window._staffReadOnly=false;
     document.querySelectorAll('.del-sel-btn').forEach(el=>el.style.display='none');
   } else {
     window._staffReadOnly=false;
   }
-  // เพิ่ม badge
+  
+  // เพิ่ม badge เข้าไปให้ครบทุก Role
   const uel=document.getElementById('userEl');
-  if(uel && role!=='admin'){
-    const badge=role==='staff'
-      ?'<span style="font-size:.6rem;padding:1px 6px;border-radius:10px;background:#dcfce7;color:#166534;border:1px solid #86efac;margin-left:4px">📋 Staff</span>'
-      :'<span style="font-size:.6rem;padding:1px 6px;border-radius:10px;background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd;margin-left:4px">👁️ Viewer</span>';
-    uel.insertAdjacentHTML('beforeend',badge);
+  if(uel) {
+    let badge = '';
+    if(role === 'staff') {
+       badge = '<span style="font-size:.6rem;padding:1px 6px;border-radius:10px;background:#dcfce7;color:#166534;border:1px solid #86efac;margin-left:4px">📋 Staff</span>';
+    } else if (role === 'viewer') {
+       badge = '<span style="font-size:.6rem;padding:1px 6px;border-radius:10px;background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd;margin-left:4px">👁️ Viewer</span>';
+    } else if (role === 'admin') {
+       badge = '<span style="font-size:.6rem;padding:1px 6px;border-radius:10px;background:#fef3c7;color:#b45309;border:1px solid #fde047;margin-left:4px">👑 Admin</span>';
+    }
+    uel.insertAdjacentHTML('beforeend', badge);
   }
 }
 function doLogout(){auth.signOut().then(()=>location.href='login.html');}
