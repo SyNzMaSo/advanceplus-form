@@ -190,6 +190,15 @@ td.w{white-space:normal;line-height:1.4;}
 
 @keyframes spin{to{transform:rotate(360deg)}}
 .spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .5s linear infinite;vertical-align:middle;margin-right:.3rem;}
+
+/* ── Excel-like Features ── */
+td { color: inherit; font-weight: inherit; }
+[data-theme="dark"] td { color: inherit; font-weight: inherit; }
+[data-theme="dark"] table { color: var(--txt); }
+th { position: relative; }
+.resizer { position: absolute; right: 0; top: 0; bottom: 0; width: 6px; cursor: col-resize; z-index: 11; transition: background 0.2s; }
+.resizer:hover, .resizer.resizing { background: var(--g-md); opacity: 0.8; }
+
 </style>
 </head>
 <body>
@@ -213,29 +222,22 @@ td.w{white-space:normal;line-height:1.4;}
   <span class="rcount" id="rcountEl">—</span>
 </div>
 
-<!-- ROW COLOR BAR -->
-<div class="color-bar" id="colorBar" style="display:none">
-  <span class="color-bar-lbl">สี:</span>
-  <div class="cp" style="background:#fef9c3" title="เหลือง"    onclick="applyRowColor('#fef9c3')"></div>
-  <div class="cp" style="background:#dcfce7" title="เขียวอ่อน" onclick="applyRowColor('#dcfce7')"></div>
-  <div class="cp" style="background:#bbf7d0" title="เขียว"      onclick="applyRowColor('#bbf7d0')"></div>
-  <div class="cp" style="background:#fee2e2" title="แดงอ่อน"   onclick="applyRowColor('#fee2e2')"></div>
-  <div class="cp" style="background:#fca5a5" title="แดง"        onclick="applyRowColor('#fca5a5')"></div>
-  <div class="cp" style="background:#dbeafe" title="ฟ้าอ่อน"   onclick="applyRowColor('#dbeafe')"></div>
-  <div class="cp" style="background:#93c5fd" title="ฟ้า"        onclick="applyRowColor('#93c5fd')"></div>
-  <div class="cp" style="background:#f3e8ff" title="ม่วงอ่อน"  onclick="applyRowColor('#f3e8ff')"></div>
-  <div class="cp" style="background:#c4b5fd" title="ม่วง"       onclick="applyRowColor('#c4b5fd')"></div>
-  <div class="cp" style="background:#ffedd5" title="ส้มอ่อน"   onclick="applyRowColor('#ffedd5')"></div>
-  <div class="cp" style="background:#fdba74" title="ส้ม"        onclick="applyRowColor('#fdba74')"></div>
-  <div class="cp" style="background:#fce7f3" title="ชมพู"       onclick="applyRowColor('#fce7f3')"></div>
-  <div class="cp" style="background:#e0f2fe" title="ฟ้าน้ำ"     onclick="applyRowColor('#e0f2fe')"></div>
-  <div class="cp" style="background:#f1f5f9" title="เทาอ่อน"   onclick="applyRowColor('#f1f5f9')"></div>
-  <div class="cp" style="background:#e2e8f0" title="เทา"        onclick="applyRowColor('#e2e8f0')"></div>
-  <span class="cp-clear" onclick="applyRowColor('')">✕ ล้างสี</span>
-  <div style="width:1px;height:18px;background:var(--border);flex-shrink:0;"></div>
-  <button class="del-sel-btn" onclick="deleteSelected()" style="height:26px;padding:0 .6rem;border-radius:6px;border:1px solid #fca5a5;background:#fee2e2;color:#b91c1c;font-family:'Kanit',sans-serif;font-size:.7rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">🗑 ลบที่เลือก</button>
+<div class="color-bar" id="colorBar" style="display:none; flex-wrap:wrap;">
+  <span class="color-bar-lbl">🎨 พื้นหลัง:</span>
+  <input type="color" id="customBg" value="#ffffff" title="เลือกสีพื้นหลัง" onchange="applyRowColor(this.value)" style="width:24px;height:24px;cursor:pointer;border:none;padding:0;border-radius:4px;">
+  
+  <span class="color-bar-lbl" style="margin-left:8px;">🔤 อักษร:</span>
+  <input type="color" id="customText" value="#000000" title="เลือกสีตัวอักษร" onchange="applyRowTextColor(this.value)" style="width:24px;height:24px;cursor:pointer;border:none;padding:0;border-radius:4px;">
+  
+  <button class="cp-clear" onclick="toggleRowBold()" style="margin-left:8px; font-weight:900; color:#1a2e1a;">B</button>
+  
+  <span class="cp-clear" style="margin-left:4px;" onclick="applyRowColor('')">✕ ล้างรูปแบบ</span>
+  
+  <div style="width:1px;height:18px;background:var(--border);flex-shrink:0;margin:0 8px;"></div>
+  
+  <button class="del-sel-btn" onclick="deleteSelected()" style="height:26px;padding:0 .6rem;border-radius:6px;border:1px solid #fca5a5;background:#fee2e2;color:#b91c1c;font-family:'Kanit',sans-serif;font-size:.7rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;margin-right:4px;">🗑 ลบที่เลือก</button>
   <button onclick="deleteAll()" style="height:26px;padding:0 .6rem;border-radius:6px;border:1px solid #fca5a5;background:#fee2e2;color:#b91c1c;font-family:'Kanit',sans-serif;font-size:.7rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">🗑 ลบทั้งหมด</button>
-  <span class="sel-count" id="selCount"></span>
+  <span class="sel-count" id="selCount" style="margin-left:8px;"></span>
 </div>
 
 <div style="overflow-x:auto;padding:0 1.1rem 6rem;">
@@ -444,79 +446,9 @@ let rowColors={}, selectedRows=new Set();
 function renderHead(){
   document.getElementById('thead').innerHTML='<tr>'+
     '<th style="width:32px;padding:.6rem .4rem;"><input type="checkbox" id="checkAll" onclick="toggleAll(this)" style="accent-color:var(--g-md)"></th>'+
-    LBLS.map((l,i)=>`<th onclick="sortBy(${i})">${l}<span class="si">${sc===i?(sa?'▲':'▼'):'⇅'}</span></th>`).join('')+
+    LBLS.map((l,i)=>`<th onclick="sortBy(${i})">${l}<span class="si">${sc===i?(sa?'▲':'▼'):'⇅'}</span><div class="resizer" onclick="event.stopPropagation()"></div></th>`).join('')+
   '</tr>';
-}
-
-function toggleAll(cb){
-  const rows = document.querySelectorAll('tbody tr[id]');
-  rows.forEach(tr=>{
-    const id=tr.id.replace('row_','');
-    const chk=tr.querySelector('input[type=checkbox]');
-    if(cb.checked){selectedRows.add(id);if(chk)chk.checked=true;}
-    else{selectedRows.delete(id);if(chk)chk.checked=false;}
-  });
-  updateSelCount();
-}
-
-function toggleSelect(id,e){
-  e.stopPropagation();
-  if(selectedRows.has(id))selectedRows.delete(id);
-  else selectedRows.add(id);
-  const cb=document.querySelector(`#row_${id} input[type=checkbox]`);
-  if(cb)cb.checked=selectedRows.has(id);
-  updateSelCount();
-}
-
-function updateSelCount(){
-  const n=selectedRows.size;
-  const bar=document.getElementById('colorBar');
-  const lbl=document.getElementById('selCount');
-  bar.style.display=n>0?'flex':'none';
-  if(lbl)lbl.textContent=`เลือกแล้ว ${n} แถว`;
-}
-
-async function deleteSelected(){
-  // เพิ่มบรรทัดนี้เพื่อบล็อก Staff / Viewer
-  if(window._userRole !== 'admin') { toast('⛔ เฉพาะ Admin เท่านั้นที่ลบได้'); return; }
-  
-  if(selectedRows.size===0)return;
-  if(!confirm(`ลบ ${selectedRows.size} แถวที่เลือกออกจากระบบเลยไหมครับ?`))return;
-  const batch=db.batch();
-  selectedRows.forEach(id=>batch.delete(db.collection('customers').doc(id)));
-  await batch.commit();
-  selectedRows.clear();
-  updateSelCount();
-  toast('🗑 ลบเรียบร้อยแล้ว');
-}
-
-async function deleteAll(){
-  // เพิ่มบรรทัดนี้เพื่อบล็อก Staff / Viewer
-  if(window._userRole !== 'admin') { toast('⛔ เฉพาะ Admin เท่านั้นที่ลบได้'); return; }
-
-  if(!confirm(`⚠️ ลบข้อมูลทั้งหมด ${docs.length} รายการออกจากระบบเลยไหมครับ?\n\nไม่สามารถกู้คืนได้!`))return;
-  const batch=db.batch();
-  docs.forEach(d=>batch.delete(db.collection('customers').doc(d._id)));
-  await batch.commit();
-  selectedRows.clear();
-  rowColors={};
-  updateSelCount();
-  toast('🗑 ลบทั้งหมดเรียบร้อยแล้ว');
-}
-
-async function applyRowColor(color){
-  if(selectedRows.size===0)return;
-  const batch=db.batch();
-  selectedRows.forEach(id=>{
-    rowColors[id]=color;
-    const tr=document.getElementById('row_'+id);
-    if(tr)tr.style.background=color;
-    // save to Firestore
-    const ref=db.collection('customers').doc(id);
-    batch.update(ref,{rowColor:color});
-  });
-  await batch.commit();
-  toast('🎨 ใส่สีแล้ว '+selectedRows.size+' แถว');
+  setTimeout(initResizers, 50); // โหลดระบบยืดหดคอลัมน์
 }
 
 function renderBody(rows){
@@ -525,9 +457,18 @@ function renderBody(rows){
   tb.innerHTML=rows.map(d=>{
     const ts=d.timestamp?.toDate?fmtDate(d.timestamp.toDate()):(d.timestamp||'—');
     const color=d.rowColor||rowColors[d._id]||'';
+    const tColor=d.textColor||'';
+    const fw=d.fontWeight||'normal';
     if(color)rowColors[d._id]=color;
-    const bg=color?`style="background:${color}"`:'';
+    
+    // โหลดรูปแบบ Excel (สีพื้น, สีอักษร, ตัวหนา)
+    let styleStr='';
+    if(color) styleStr+=`background:${color} !important;`;
+    if(tColor) styleStr+=`color:${tColor} !important;`;
+    if(fw!=='normal') styleStr+=`font-weight:${fw} !important;`;
+    const bg = styleStr ? `style="${styleStr}"` : '';
     const checked=selectedRows.has(d._id);
+    
     return `<tr ${bg} id="row_${d._id}">
       <td style="width:32px;padding:.4rem;" onclick="toggleSelect('${d._id}',event)">
         <input type="checkbox" ${checked?'checked':''} style="accent-color:var(--g-md);cursor:pointer;" onclick="toggleSelect('${d._id}',event)">
@@ -547,6 +488,134 @@ function renderBody(rows){
       <td class="w" onclick="openModal('${d._id}')">${esc(d.note||'')}</td>
     </tr>`;
   }).join('');
+}
+
+// ── ชุดฟังก์ชันที่หายไป (ยืดคอลัมน์, เปลี่ยนสี, เลือกแถว, ย่อรูปภาพ) ──
+function toggleAll(el){
+  if(el.checked) docs.forEach(d=>selectedRows.add(d._id));
+  else selectedRows.clear();
+  updateSelCount(); applyFilter();
+}
+function toggleSelect(id, e){
+  if(e) e.stopPropagation();
+  if(selectedRows.has(id)) selectedRows.delete(id);
+  else selectedRows.add(id);
+  updateSelCount(); applyFilter();
+}
+function updateSelCount(){
+  const c = document.getElementById('selCount');
+  if(c) c.textContent = selectedRows.size > 0 ? `เลือก ${selectedRows.size} รายการ` : '';
+  const cb = document.getElementById('colorBar');
+  if(cb) cb.style.display = selectedRows.size > 0 ? 'flex' : 'none';
+}
+
+async function applyRowColor(color){
+  if(selectedRows.size===0)return;
+  const batch=db.batch();
+  selectedRows.forEach(id=>{
+    rowColors[id]=color;
+    const tr=document.getElementById('row_'+id);
+    if(tr)tr.style.background=color;
+    batch.update(db.collection('customers').doc(id),{rowColor:color});
+  });
+  await batch.commit();
+  toast('🎨 เปลี่ยนสีพื้นหลังแล้ว');
+}
+
+async function applyRowTextColor(color){
+  if(selectedRows.size===0)return;
+  const batch=db.batch();
+  selectedRows.forEach(id=>{
+    const tr=document.getElementById('row_'+id);
+    if(tr) tr.style.color=color;
+    const d=docs.find(x=>x._id===id); if(d) d.textColor=color;
+    batch.update(db.collection('customers').doc(id),{textColor:color});
+  });
+  await batch.commit();
+  toast('🔤 เปลี่ยนสีตัวอักษรแล้ว');
+}
+
+async function toggleRowBold(){
+  if(selectedRows.size===0)return;
+  const batch=db.batch();
+  selectedRows.forEach(id=>{
+    const tr=document.getElementById('row_'+id);
+    const d=docs.find(x=>x._id===id);
+    const newW = (d && d.fontWeight==='bold') ? 'normal' : 'bold';
+    if(tr) tr.style.fontWeight = newW;
+    if(d) d.fontWeight = newW;
+    batch.update(db.collection('customers').doc(id),{fontWeight:newW});
+  });
+  await batch.commit();
+  toast('🖋️ เปลี่ยนความหนาตัวอักษรแล้ว');
+}
+
+async function deleteSelected(){
+  if(window._userRole !== 'admin') { toast('⛔ เฉพาะ Admin เท่านั้นที่ลบได้'); return; }
+  if(selectedRows.size===0)return;
+  if(!confirm(`ลบ ${selectedRows.size} แถวที่เลือกออกจากระบบเลยไหมครับ?`))return;
+  const batch=db.batch();
+  selectedRows.forEach(id=>batch.delete(db.collection('customers').doc(id)));
+  await batch.commit();
+  selectedRows.clear();
+  updateSelCount();
+  toast('🗑 ลบเรียบร้อยแล้ว');
+}
+
+async function deleteAll(){
+  if(window._userRole !== 'admin') { toast('⛔ เฉพาะ Admin เท่านั้นที่ลบได้'); return; }
+  if(!confirm(`⚠️ ลบข้อมูลทั้งหมด ${docs.length} รายการออกจากระบบเลยไหมครับ?\n\nไม่สามารถกู้คืนได้!`))return;
+  const batch=db.batch();
+  docs.forEach(d=>batch.delete(db.collection('customers').doc(d._id)));
+  await batch.commit();
+  selectedRows.clear();
+  rowColors={};
+  updateSelCount();
+  toast('🗑 ลบทั้งหมดเรียบร้อยแล้ว');
+}
+
+function initResizers() {
+  const ths = document.querySelectorAll('#thead th');
+  ths.forEach(th => {
+    const resizer = th.querySelector('.resizer');
+    if(!resizer) return;
+    let startX, startWidth;
+    resizer.addEventListener('mousedown', function(e) {
+      startX = e.pageX;
+      startWidth = th.offsetWidth;
+      resizer.classList.add('resizing');
+      document.addEventListener('mousemove', mouseMoveHandler);
+      document.addEventListener('mouseup', mouseUpHandler);
+      e.stopPropagation(); e.preventDefault();
+    });
+    function mouseMoveHandler(e) {
+      const newW = (startWidth + e.pageX - startX) + 'px';
+      th.style.width = newW; th.style.minWidth = newW; th.style.maxWidth = newW;
+    }
+    function mouseUpHandler() {
+      resizer.classList.remove('resizing');
+      document.removeEventListener('mousemove', mouseMoveHandler);
+      document.removeEventListener('mouseup', mouseUpHandler);
+    }
+  });
+}
+
+async function compressImage(file, maxKB=200){
+  return new Promise(resolve => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      let w=img.width,h=img.height,mp=1200;
+      if(w>mp||h>mp){const r=Math.min(mp/w,mp/h);w=Math.round(w*r);h=Math.round(h*r);}
+      c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);
+      let q=0.85;
+      const go=()=>{
+        const d=c.toDataURL('image/jpeg',q);
+        if(Math.round(d.length*3/4/1024)<=maxKB||q<=0.3){URL.revokeObjectURL(url);resolve({name:file.name,data:d,type:'image/jpeg'});}
+        else{q-=0.1;go();}
+      };go();
+    };img.src=url;
+  });
 }
 
 // Modal
@@ -707,8 +776,10 @@ function buildFields(d){
   const imgs=d.images||{};
   const groups=[['cc','📞 Call Center'],['tech','🔧 ช่าง'],['admin','👤 Admin']];
   let anyImg=groups.some(([k])=>(imgs[k]||[]).length>0);
+  
+  h+=`<div class="msec">📷 รูปภาพ</div><div class="img-section">`;
+  
   if(anyImg){
-    h+=`<div class="msec">📷 รูปภาพ</div><div class="img-section">`;
     groups.forEach(([k,lbl])=>{
       const arr=imgs[k]||[];
       if(!arr.length)return;
@@ -719,8 +790,21 @@ function buildFields(d){
       });
       h+='</div>';
     });
-    h+='</div>';
+  } else {
+    h+=`<div style="font-size:0.7rem; color:var(--txt-dim); margin-bottom:8px;">ยังไม่มีรูปภาพเดิม</div>`;
   }
+  
+  // ปุ่มอัปโหลดรูปภาพใหม่ (แสดงให้คนที่ไม่ใช่ Viewer เห็นเท่านั้น)
+  if(!window._staffReadOnly) {
+    h += `<div style="margin-top:8px;">
+            <label style="font-size:0.7rem; font-weight:700; cursor:pointer; display:inline-block; padding:6px 12px; background:var(--g-pale); color:var(--g-md); border-radius:8px; border:1px solid var(--border);">
+              ➕ เพิ่มรูปภาพเพิ่มเติม
+              <input type="file" id="mf_new_images" accept="image/*" multiple style="display:none;" onchange="document.getElementById('mf_new_img_count').textContent = 'เลือกแล้ว ' + this.files.length + ' รูป'">
+            </label>
+            <span id="mf_new_img_count" style="font-size:0.65rem; color:var(--txt-dim); margin-left:8px;"></span>
+          </div>`;
+  }
+  h+='</div>';
   return h;
 }
 
@@ -753,10 +837,26 @@ async function saveDoc(){
      u.problem = `${m_cat_txt} > ${s_cat_txt}`;
   }
 
-  const r=u.result||'';
-  u.rowColor=r.includes('จบงาน')?'#bbf7d0':r==='ตัดออก'||r==='ลูกค้ายกเลิก'?'#fca5a5':'';
+  // ซ่อมบั๊กตัวแปรสถานะที่หายไป
+  const r = u.result || '';
+
+  // รักษา rowColor เดิมไว้ ถ้ามีการปรับสีพื้นหลังค้างไว้
+  const existingDoc = docs.find(x=>x._id===editId);
+  if(!existingDoc.rowColor && r) {
+     u.rowColor = r.includes('จบงาน') ? '#bbf7d0' : r==='ตัดออก'||r==='ลูกค้ายกเลิก' ? '#fca5a5' : '';
+  }
+  
   u.updatedAt=firebase.firestore.FieldValue.serverTimestamp();
   u.updatedBy=auth.currentUser?.email||'';
+  
+  // ── จัดการอัปโหลดรูปลงใน Modal ──
+  const newImgInput = document.getElementById('mf_new_images');
+  if (newImgInput && newImgInput.files.length > 0) {
+     toast('กำลังประมวลผลรูปภาพ...');
+     const newImgs = await Promise.all(Array.from(newImgInput.files).map(f=>compressImage(f)));
+     const currentCC = (existingDoc.images && existingDoc.images.cc) ? existingDoc.images.cc : [];
+     u.images = { ...(existingDoc.images||{}), cc: [...currentCC, ...newImgs] };
+  }
   
   try{
     await db.collection('customers').doc(editId).update(u);
