@@ -444,16 +444,24 @@ function dtLocalVal(s){
 let rowColors={}, selectedRows=new Set();
 
 function renderHead(){
+  const isStaff = window._userRole === 'staff';
   document.getElementById('thead').innerHTML='<tr>'+
-    '<th style="width:32px;padding:.6rem .4rem;"><input type="checkbox" id="checkAll" onclick="toggleAll(this)" style="accent-color:var(--g-md)"></th>'+
-    LBLS.map((l,i)=>`<th onclick="sortBy(${i})">${l}<span class="si">${sc===i?(sa?'▲':'▼'):'⇅'}</span><div class="resizer" onclick="event.stopPropagation()"></div></th>`).join('')+
+    '<th style="width:32px;padding:.6rem .4rem;">'+ (isStaff ? '' : '<input type="checkbox" id="checkAll" onclick="toggleAll(this)" style="accent-color:var(--g-md)">') +'</th>'+
+    LBLS.map((l,i)=>`<th onclick="sortBy(${i})">${l}<span class="si">${sc===i?(sa?'▲':'▼'):'⇅'}</span>${isStaff ? '' : '<div class="resizer" onclick="event.stopPropagation()"></div>'}</th>`).join('')+
   '</tr>';
-  setTimeout(initResizers, 50); // โหลดระบบยืดหดคอลัมน์
+  
+  // โหลดระบบยืดหดคอลัมน์เฉพาะคนที่ไม่ใช่ Staff
+  if(!isStaff) {
+    setTimeout(initResizers, 50); 
+  }
 }
 
 function renderBody(rows){
   const tb=document.getElementById('tbody');
   if(!rows.length){tb.innerHTML='<tr><td colspan="14" class="no-data">ไม่พบข้อมูล</td></tr>';return;}
+  
+  const isStaff = window._userRole === 'staff';
+
   tb.innerHTML=rows.map(d=>{
     const ts=d.timestamp?.toDate?fmtDate(d.timestamp.toDate()):(d.timestamp||'—');
     const color=d.rowColor||rowColors[d._id]||'';
@@ -469,9 +477,13 @@ function renderBody(rows){
     const bg = styleStr ? `style="${styleStr}"` : '';
     const checked=selectedRows.has(d._id);
     
+    // ถ้าเป็น Staff ไม่ต้องสร้าง Checkbox
+    const chkHtml = isStaff ? '' : `<input type="checkbox" ${checked?'checked':''} style="accent-color:var(--g-md);cursor:pointer;" onclick="toggleSelect('${d._id}',event)">`;
+    const tdClick = isStaff ? '' : `onclick="toggleSelect('${d._id}',event)"`;
+
     return `<tr ${bg} id="row_${d._id}">
-      <td style="width:32px;padding:.4rem;" onclick="toggleSelect('${d._id}',event)">
-        <input type="checkbox" ${checked?'checked':''} style="accent-color:var(--g-md);cursor:pointer;" onclick="toggleSelect('${d._id}',event)">
+      <td style="width:32px;padding:.4rem;" ${tdClick}>
+        ${chkHtml}
       </td>
       <td onclick="openModal('${d._id}')">${esc(ts)}</td>
       <td onclick="openModal('${d._id}')"><b>${esc(d.name||'')}</b></td>
@@ -490,14 +502,16 @@ function renderBody(rows){
   }).join('');
 }
 
-// ── ชุดฟังก์ชันที่หายไป (ยืดคอลัมน์, เปลี่ยนสี, เลือกแถว, ย่อรูปภาพ) ──
+// ── ชุดฟังก์ชันที่ป้องกัน Staff แอบใช้งาน ──
 function toggleAll(el){
+  if(window._userRole === 'staff') return; // บล็อก Staff
   if(el.checked) docs.forEach(d=>selectedRows.add(d._id));
   else selectedRows.clear();
   updateSelCount(); applyFilter();
 }
 function toggleSelect(id, e){
   if(e) e.stopPropagation();
+  if(window._userRole === 'staff') return; // บล็อก Staff
   if(selectedRows.has(id)) selectedRows.delete(id);
   else selectedRows.add(id);
   updateSelCount(); applyFilter();
@@ -506,7 +520,10 @@ function updateSelCount(){
   const c = document.getElementById('selCount');
   if(c) c.textContent = selectedRows.size > 0 ? `เลือก ${selectedRows.size} รายการ` : '';
   const cb = document.getElementById('colorBar');
-  if(cb) cb.style.display = selectedRows.size > 0 ? 'flex' : 'none';
+  if(cb) {
+     if (window._userRole === 'staff') cb.style.display = 'none'; // ซ่อนแถบเครื่องมือ Staff
+     else cb.style.display = selectedRows.size > 0 ? 'flex' : 'none';
+  }
 }
 
 async function applyRowColor(color){
@@ -618,20 +635,18 @@ async function compressImage(file, maxKB=200){
   });
 }
 
-// Modal
 function openModal(id){
-  if(window._staffReadOnly){ toast('📋 Staff — ดูข้อมูลได้อย่างเดียว'); return; }
+  // ป้องกัน Staff เปิดหน้าต่างแก้ไข
+  if(window._userRole === 'staff' || window._staffReadOnly){ 
+      toast('📋 Staff — ทำได้แค่ดูข้อมูลเท่านั้นครับ'); 
+      return; 
+  }
   editId=id;
   const d=docs.find(x=>x._id===id); if(!d) return;
   document.getElementById('mtitle').innerHTML=`<b>${esc(d.name||'ไม่ระบุ')}</b>&nbsp;${typeTag(d.type||'')}`;
   document.getElementById('mbody').innerHTML=buildFields(d);
   document.getElementById('ov').classList.add('on');
   document.getElementById('ms').classList.add('on');
-}
-function closeModal(){
-  document.getElementById('ov').classList.remove('on');
-  document.getElementById('ms').classList.remove('on');
-  editId=null;
 }
 
 // ชุดข้อมูล Dropdown สำหรับหน้าแก้ไข
