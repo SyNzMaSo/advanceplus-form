@@ -314,28 +314,31 @@ auth.onAuthStateChanged(async u=>{
 
 function applyDataRoleUI(role){
   window._userRole=role;
+  
+  // ดึงปุ่มลบด้านนอกทั้งหมดมาเก็บไว้
+  const bulkDeleteBtns = document.querySelectorAll('button[onclick="deleteAll()"], button[onclick="deleteSelected()"], .del-sel-btn');
+  
   if(role==='staff'){
     window._staffReadOnly=true;
-    document.querySelectorAll('.del-sel-btn').forEach(el=>el.style.display='none');
+    // ซ่อนปุ่มลบสำหรับ Staff
+    bulkDeleteBtns.forEach(el=>el.style.display='none');
   } else if(role==='viewer'){
     window._staffReadOnly=false;
-    document.querySelectorAll('.del-sel-btn').forEach(el=>el.style.display='none');
+    // ซ่อนปุ่มลบสำหรับ Viewer ด้วย (เพราะ Viewer ห้ามลบ)
+    bulkDeleteBtns.forEach(el=>el.style.display='none');
   } else {
     window._staffReadOnly=false;
+    // โชว์ปุ่มให้ Admin
+    bulkDeleteBtns.forEach(el=>el.style.display='inline-block');
   }
-  
-  // เพิ่ม badge เข้าไปให้ครบทุก Role
+
+  // ส่วนของการแสดง Badge (เหมือนเดิม)
   const uel=document.getElementById('userEl');
-  if(uel) {
-    let badge = '';
-    if(role === 'staff') {
-       badge = '<span style="font-size:.6rem;padding:1px 6px;border-radius:10px;background:#dcfce7;color:#166534;border:1px solid #86efac;margin-left:4px">📋 Staff</span>';
-    } else if (role === 'viewer') {
-       badge = '<span style="font-size:.6rem;padding:1px 6px;border-radius:10px;background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd;margin-left:4px">👁️ Viewer</span>';
-    } else if (role === 'admin') {
-       badge = '<span style="font-size:.6rem;padding:1px 6px;border-radius:10px;background:#fef3c7;color:#b45309;border:1px solid #fde047;margin-left:4px">👑 Admin</span>';
-    }
-    uel.insertAdjacentHTML('beforeend', badge);
+  if(uel && role!=='admin'){
+    const badge=role==='staff'
+      ?'<span style="font-size:.6rem;padding:1px 6px;border-radius:10px;background:#dcfce7;color:#166534;border:1px solid #86efac;margin-left:4px">📋 Staff</span>'
+      :'<span style="font-size:.6rem;padding:1px 6px;border-radius:10px;background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd;margin-left:4px">👁️ Viewer</span>';
+    uel.insertAdjacentHTML('beforeend',badge);
   }
 }
 function doLogout(){auth.signOut().then(()=>location.href='login.html');}
@@ -479,6 +482,9 @@ function updateSelCount(){
 }
 
 async function deleteSelected(){
+  // เพิ่มบรรทัดนี้เพื่อบล็อก Staff / Viewer
+  if(window._userRole !== 'admin') { toast('⛔ เฉพาะ Admin เท่านั้นที่ลบได้'); return; }
+  
   if(selectedRows.size===0)return;
   if(!confirm(`ลบ ${selectedRows.size} แถวที่เลือกออกจากระบบเลยไหมครับ?`))return;
   const batch=db.batch();
@@ -490,6 +496,9 @@ async function deleteSelected(){
 }
 
 async function deleteAll(){
+  // เพิ่มบรรทัดนี้เพื่อบล็อก Staff / Viewer
+  if(window._userRole !== 'admin') { toast('⛔ เฉพาะ Admin เท่านั้นที่ลบได้'); return; }
+
   if(!confirm(`⚠️ ลบข้อมูลทั้งหมด ${docs.length} รายการออกจากระบบเลยไหมครับ?\n\nไม่สามารถกู้คืนได้!`))return;
   const batch=db.batch();
   docs.forEach(d=>batch.delete(db.collection('customers').doc(d._id)));
