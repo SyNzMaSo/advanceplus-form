@@ -635,6 +635,15 @@ async function compressImage(file, maxKB=200){
   });
 }
 
+// ฟังก์ชันสำหรับปิดหน้าต่างแก้ไข (Modal)
+function closeModal(){
+  const ov = document.getElementById('ov');
+  const ms = document.getElementById('ms');
+  if(ov) ov.classList.remove('on');
+  if(ms) ms.classList.remove('on');
+  editId = null; // ล้างค่า ID ที่กำลังแก้ไขอยู่
+}
+
 function openModal(id){
   // ป้องกัน Staff เปิดหน้าต่างแก้ไข
   if(window._userRole === 'staff' || window._staffReadOnly){ 
@@ -917,66 +926,97 @@ let _tt;
 function toast(m){const e=document.getElementById('toastEl');e.textContent=m;e.classList.add('on');clearTimeout(_tt);_tt=setTimeout(()=>e.classList.remove('on'),3000);}
 </script>
 
-<input type="file" id="excelInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="importExcel(this)">
-<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
 <script>
-async function importExcel(input){
-  const file=input.files[0]; if(!file) return;
-  const role=window._userRole;
-  if(role!=='admin'){ toast('⛔ เฉพาะ Admin เท่านั้น'); input.value=''; return; }
-  
-  const reader=new FileReader();
-  reader.onload=async function(e){
-    try{
-      const wb=XLSX.read(e.target.result,{type:'array'});
-      const ws=wb.Sheets[wb.SheetNames[0]];
-      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
-      if(!rows.length){ toast('⚠️ ไม่พบข้อมูลใน Excel'); return; }
-      
-      const colMap={
-        'ชื่อ':'name','ชื่อลูกค้า':'name',
-        'ประเภท':'type','ประเภทงาน':'type',
-        'เบอร์':'phone','เบอร์โทรศัพท์':'phone','เบอร์โทร':'phone',
-        'ช่องทาง':'channel','ช่องทางติดต่อ':'channel',
-        'ปัญหา':'problem','ปัญหา / ระบบ':'problem',
-        'วันที่เข้างาน':'dateStart','วันที่ช่างเข้างาน':'dateStart',
-        'วันที่เสร็จงาน':'dateEnd','วันที่ช่างเสร็จงาน':'dateEnd',
-        'ความคืบหน้า':'progress',
-        'การดำเนินการ':'action',
-        'สถานะ':'result','สถานะงาน':'result',
-        'ค่าใช้จ่าย':'cost','ค่าใช้จ่าย (บาท)':'cost',
-        'หมายเหตุ':'note',
+// 2. ฟังก์ชันนำเข้าข้อมูลจาก Excel
+async function importExcel(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  if (window._userRole !== 'admin') {
+    toast('⛔ เฉพาะ Admin เท่านั้นที่มีสิทธิ์นำเข้าข้อมูล');
+    event.target.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      // ตัวดักจับ: เช็คว่า Library โหลดสำเร็จและพร้อมใช้งานหรือไม่
+      if (typeof XLSX === 'undefined' || typeof XLSX.read !== 'function') {
+        toast('⚠️ ระบบอ่าน Excel โหลดไม่สำเร็จ กรุณากด Ctrl + F5 เพื่อรีเฟรชหน้าเว็บ');
+        return;
+      }
+
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(firstSheet);
+
+      // --- Mapping หัวข้อจากไฟล์ Monly Report ---
+      const colMap = {
+        'ชื่อ': 'name', 'ชื่อลูกค้า': 'name',
+        'เบอร์โทร': 'phone', 'เบอร์โทรศัพท์': 'phone', 'โทรศัพท์': 'phone',
+        'ประเภท': 'type', 'Customer Classification': 'type', 'Classification': 'type',
+        'ปัญหา': 'problem', 'รายละเอียดของงาน': 'problem', 'อาการ': 'problem',
+        'วันที่': 'dateStart', 'วันที่เข้างาน': 'dateStart',
+        'ผล': 'progress', 'ความคืบหน้า': 'progress',
+        'สาเหตุ': 'action', 'การดำเนินการ': 'action',
+        'สถานะ': 'result', 'หมายเหตุ': 'note'
       };
-      
-      const batch=db.batch();
-      let count=0;
-      rows.forEach(row=>{
-        const doc={timestamp:firebase.firestore.FieldValue.serverTimestamp(),importedBy:auth.currentUser?.email||''};
-        Object.keys(row).forEach(col=>{
-          const mapped=colMap[col.trim()];
-          if(mapped) doc[mapped]=(row[col]||'').toString().trim();
+
+      const batch = db.batch();
+      let count = 0;
+
+      rows.forEach(row => {
+        const doc = { 
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
+          importedBy: auth.currentUser?.email || '' 
+        };
+        
+        Object.keys(row).forEach(col => {
+          const mapped = colMap[col.trim()];
+          if (mapped) {
+            let val = row[col];
+            if (mapped === 'dateStart' && typeof val === 'number') {
+              const d = XLSX.utils.sheet_to_date(val);
+              val = d.toISOString().substring(0, 16); 
+            }
+            doc[mapped] = (val || '').toString().trim();
+          }
         });
-        if(!doc.name&&!doc.phone) return; // skip empty rows
-        // auto row color
-        const r=doc.result||'';
-        doc.rowColor=r.includes('จบงาน')?'#bbf7d0':r==='ตัดออก'?'#fca5a5':'';
-        batch.set(db.collection('customers').doc(),doc);
-        count++;
+
+        if (doc.name || doc.phone) {
+          const r = doc.result || '';
+          doc.rowColor = r.includes('จบงาน') ? '#bbf7d0' : (r === 'ตัดออก' || r === 'ลูกค้ายกเลิก' ? '#fca5a5' : '');
+          const newDocRef = db.collection('customers').doc();
+          batch.set(newDocRef, doc);
+          count++;
+        }
       });
-      
-      if(!count){ toast('⚠️ ไม่พบข้อมูลที่นำเข้าได้'); input.value=''; return; }
-      if(!confirm('นำเข้า '+count+' รายการจาก Excel เข้า Firestore เลยไหมครับ?')){ input.value=''; return; }
-      
-      await batch.commit();
-      input.value='';
-      toast('✅ นำเข้า '+count+' รายการเรียบร้อยแล้ว');
-    }catch(err){
-      toast('⚠️ เกิดข้อผิดพลาด: '+err.message);
-      input.value='';
+
+      if (count === 0) {
+        toast('⚠️ ไม่พบข้อมูลที่นำเข้าได้ (หัวข้อใน Excel ไม่ตรงกับระบบ)');
+      } else {
+        if (confirm(`พบข้อมูล ${count} รายการ ต้องการนำเข้าสู่ระบบเลยใช่ไหม?`)) {
+          toast('⏳ กำลังนำเข้าข้อมูล...');
+          await batch.commit();
+          toast(`✅ นำเข้าเรียบร้อย ${count} รายการ`);
+          setTimeout(() => location.reload(), 1500);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      toast('❌ ไฟล์มีปัญหา หรืออ่านข้อมูลไม่ได้: ' + err.message);
     }
+    event.target.value = ''; 
   };
   reader.readAsArrayBuffer(file);
 }
 </script>
+
+<input type="file" id="excelInput" accept=".xlsx, .xls, .csv" style="display:none" onchange="importExcel(event)">
+
 </body>
 </html>
