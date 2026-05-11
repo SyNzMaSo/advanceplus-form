@@ -314,25 +314,20 @@ auth.onAuthStateChanged(async u=>{
 
 function applyDataRoleUI(role){
   window._userRole=role;
-  
-  // ดึงปุ่มลบด้านนอกทั้งหมดมาเก็บไว้
   const bulkDeleteBtns = document.querySelectorAll('button[onclick="deleteAll()"], button[onclick="deleteSelected()"], .del-sel-btn');
   
   if(role==='staff'){
     window._staffReadOnly=true;
-    // ซ่อนปุ่มลบสำหรับ Staff
     bulkDeleteBtns.forEach(el=>el.style.display='none');
   } else if(role==='viewer'){
     window._staffReadOnly=false;
-    // ซ่อนปุ่มลบสำหรับ Viewer ด้วย (เพราะ Viewer ห้ามลบ)
-    bulkDeleteBtns.forEach(el=>el.style.display='none');
+    // แสดงปุ่มลบให้ Viewer เห็น (ไม่ต้องปิด)
+    bulkDeleteBtns.forEach(el=>el.style.display='inline-block');
   } else {
     window._staffReadOnly=false;
-    // โชว์ปุ่มให้ Admin
     bulkDeleteBtns.forEach(el=>el.style.display='inline-block');
   }
 
-  // ส่วนของการแสดง Badge (เหมือนเดิม)
   const uel=document.getElementById('userEl');
   if(uel && role!=='admin'){
     const badge=role==='staff'
@@ -570,12 +565,52 @@ function closeModal(){
   editId=null;
 }
 
+// ชุดข้อมูล Dropdown สำหรับหน้าแก้ไข
+const MOD_SUB_CATS = {
+  'กล้อง Digital':     ['กล้องดับ (น้อยกว่า 4 ตัว)','กล้องดับ (มากกว่า 4 ตัว)','กล้องเสีย','กล้องมีเสียงร้อง','กล้องติดๆ ดับๆ','กล้องไม่ออนไลน์','ดูย้อนหลังไม่ได้','ภาพเบลอ','สัญญาณหลุด','ภาพไม่ขึ้น','อื่นๆ'],
+  'กล้อง Analog':      ['กล้องดับ (น้อยกว่า 4 ตัว)','กล้องดับ (มากกว่า 4 ตัว)','กล้องเสีย','กล้องมีเสียงร้อง','กล้องติดๆ ดับๆ','กล้องไม่ออนไลน์','ดูย้อนหลังไม่ได้','ภาพเบลอ','สัญญาณหลุด','สัญญาณรบกวน','อื่นๆ'],
+  'เครื่องบันทึก NVR': ['ไฟไม่ขึ้น','เครื่องพัง','HDD Error','Adapter เสีย','สาย SATA มีปัญหา','บันทึกไม่ได้','ภาพไม่แสดง','อื่นๆ'],
+  'ระบบ Network':      ['อินเทอร์เน็ตขัดข้อง','สัญญาณ Wi-Fi หลุด','อุปกรณ์ไม่ออนไลน์','Port / Switch เสีย','อื่นๆ'],
+  'อื่นๆ':             ['ไม่ทำงาน','เสียหาย','ขาด / หาย','ต้องการเพิ่มเติม','อื่นๆ'],
+};
+
+function modMainCatChange(){
+  const mc = document.getElementById('mf_main_cat').value;
+  const otherDiv = document.getElementById('mf_main_cat_other_div');
+  if(otherDiv) otherDiv.style.display = mc==='อื่นๆ'?'block':'none';
+  const subSel = document.getElementById('mf_sub_cat');
+  if(subSel){
+    const opts = MOD_SUB_CATS[mc] || MOD_SUB_CATS['อื่นๆ'];
+    subSel.innerHTML = '<option value="">— เลือกปัญหา —</option>' + opts.map(o=>`<option>${o}</option>`).join('');
+    subSel.value='';
+    modSubCatChange();
+  }
+}
+function modSubCatChange(){
+  const sc = document.getElementById('mf_sub_cat').value;
+  const otherDiv = document.getElementById('mf_sub_cat_other_div');
+  if(otherDiv) otherDiv.style.display = sc==='อื่นๆ'?'block':'none';
+}
+function modPointsChange(){
+  const pt = document.getElementById('mf_points').value;
+  const otherDiv = document.getElementById('mf_points_other_div');
+  if(otherDiv) otherDiv.style.display = pt==='อื่นๆ'?'block':'none';
+}
+function modTypeChange(){
+  const typ = document.getElementById('mf_type').value || '';
+  const isCI = typ.startsWith('CI');
+  const ciZone=document.getElementById('mf_ci_zone');
+  const csZone=document.getElementById('mf_cs_zone');
+  if(ciZone) ciZone.style.display = isCI?'block':'none';
+  if(csZone) csZone.style.display = isCI?'none':'block';
+}
+
 function buildFields(d){
   const rows=[
     {sec:'📞 Call Center'},
     {k:'name',l:'ชื่อลูกค้า',t:'text'},{k:'type',l:'ประเภทงาน',t:'type'},
     {k:'phone',l:'เบอร์โทรศัพท์',t:'text'},{k:'channel',l:'ช่องทางติดต่อ',t:'channel'},
-    {k:'problem',l:'ปัญหา / ระบบ',t:'ta'},
+    {k:'problem',l:'ปัญหา / ระบบ',t:'problem_ui'}, 
     {sec:'🔧 รายละเอียด'},
     {k:'dateStart',l:'วันที่เข้างาน',t:'dt'},{k:'dateEnd',l:'วันที่เสร็จงาน',t:'dt'},
     {k:'progress',l:'ความคืบหน้า (ฝั่งผู้กรอก)',t:'progress'},{k:'action',l:'การดำเนินการ',t:'action'},
@@ -588,8 +623,76 @@ function buildFields(d){
       if(ig){h+='</div>';ig=false;}
       h+=`<div class="msec">${r.sec}</div><div class="mgrid">`;ig=true;return;
     }
+    
+    if(r.t==='problem_ui'){
+       const pv = d.problem || '';
+       let isCI = (d.type || '').startsWith('CI');
+       let m_cat = '', s_cat = '', site = '', pts = '';
+       
+       if(pv.includes('[CI]')){
+          const m = pv.match(/ระบบ:\s*(.*?)\s*\|\s*หน้างาน:\s*(.*?)\s*\|\s*จุด:\s*(.*)/);
+          if(m){ m_cat=m[1]; site=m[2]; pts=m[3]; } else { m_cat=pv; }
+       } else if(pv.includes(' > ')){
+          const m = pv.split(' > ');
+          m_cat = m[0].trim(); s_cat = m[1] ? m[1].trim() : '';
+       } else {
+          m_cat = pv;
+       }
+
+       let isMainOther = m_cat && !['กล้อง Digital','กล้อง Analog','เครื่องบันทึก NVR','ระบบ Network','อื่นๆ',''].includes(m_cat);
+       let mainSelVal = isMainOther ? 'อื่นๆ' : m_cat;
+       let mainOtherVal = isMainOther ? m_cat : '';
+
+       let subOpts = MOD_SUB_CATS[mainSelVal] || MOD_SUB_CATS['อื่นๆ'];
+       let isSubOther = s_cat && !subOpts.includes(s_cat) && s_cat !== '';
+       let subSelVal = isSubOther ? 'อื่นๆ' : s_cat;
+       let subOtherVal = isSubOther ? s_cat : '';
+
+       let isPtsOther = pts && !['1','2','3','4','5','6','8','10','12','16','20','24','32','','อื่นๆ'].includes(pts);
+       let ptsSelVal = isPtsOther ? 'อื่นๆ' : pts;
+       let ptsOtherVal = isPtsOther ? pts : '';
+
+       let probHtml = `
+         <div style="grid-column:1/-1; border:1px solid var(--border); border-radius:11px; padding:12px; background:var(--row-alt); margin-bottom:8px;">
+           <div style="font-size:.68rem;font-weight:700;color:var(--g-md);margin-bottom:8px;">🛠 ระบบจัดการปัญหา (Dropdown)</div>
+           <div class="mgrid" style="margin-bottom:8px">
+             <div class="mfg"><label>ระบบ / ประเภทปัญหา</label><select id="mf_main_cat" onchange="modMainCatChange()">
+               <option value="">— เลือกระบบ —</option>
+               ${['กล้อง Digital','กล้อง Analog','เครื่องบันทึก NVR','ระบบ Network','อื่นๆ'].map(o=>`<option${mainSelVal===o?' selected':''}>${o}</option>`).join('')}
+             </select></div>
+             <div class="mfg" id="mf_main_cat_other_div" style="display:${isMainOther?'block':'none'}"><label>ระบุชื่อระบบ</label><input type="text" id="mf_main_cat_other" value="${mainOtherVal}"></div>
+           </div>
+
+           <div id="mf_ci_zone" style="display:${isCI?'block':'none'}">
+             <div class="mgrid">
+               <div class="mfg"><label>ลักษณะหน้างาน</label><select id="mf_site_type">
+                 <option value="">— เลือกลักษณะหน้างาน —</option>
+                 ${['โรงงาน / คลังสินค้า','อพาร์ทเมนท์','บ้านเดี่ยว','อาคารพาณิชย์','ร้านค้ามินิมาร์ท','บ้านทาวน์เฮ้าส์','ออฟฟิศทาวน์โฮม','ร้านอาหาร / กาแฟ','ลานจอดรถบัส','หมู่บ้าน'].map(o=>`<option${site===o?' selected':''}>${o}</option>`).join('')}
+               </select></div>
+               <div class="mfg"><label>จำนวนจุด</label><select id="mf_points" onchange="modPointsChange()">
+                 <option value="">— เลือกจำนวนจุด —</option>
+                 ${['1','2','3','4','5','6','8','10','12','16','20','24','32','อื่นๆ'].map(o=>`<option${ptsSelVal===o?' selected':''}>${o}</option>`).join('')}
+               </select></div>
+             </div>
+             <div class="mfg" id="mf_points_other_div" style="display:${isPtsOther?'block':'none'}; margin-top:8px;"><label>ระบุจำนวนจุด</label><input type="text" id="mf_points_other" value="${ptsOtherVal}"></div>
+           </div>
+
+           <div id="mf_cs_zone" style="display:${!isCI?'block':'none'}">
+             <div class="mgrid">
+               <div class="mfg"><label>ปัญหา / อาการ</label><select id="mf_sub_cat" onchange="modSubCatChange()">
+                 <option value="">— เลือกปัญหา —</option>
+                 ${subOpts.map(o=>`<option${subSelVal===o?' selected':''}>${o}</option>`).join('')}
+               </select></div>
+               <div class="mfg" id="mf_sub_cat_other_div" style="display:${isSubOther?'block':'none'}"><label>ระบุอาการ</label><input type="text" id="mf_sub_cat_other" value="${subOtherVal}"></div>
+             </div>
+           </div>
+         </div>`;
+       h += probHtml;
+       return; 
+    }
+
     const v=esc(d[r.k]||'');let inp='';
-    if(r.t==='type')inp=`<select id="mf_${r.k}">${['CI1','CI2','CS1','CS2','CW','CH','CR'].map(o=>`<option${v===o?' selected':''}>${o}</option>`).join('')}</select>`;
+    if(r.t==='type')inp=`<select id="mf_${r.k}" onchange="modTypeChange()">${['CI1','CI2','CS1','CS2','CW','CH','CR'].map(o=>`<option${v===o?' selected':''}>${o}</option>`).join('')}</select>`;
     else if(r.t==='channel')inp=`<select id="mf_${r.k}">${['หน้าร้าน','Facebook','Line Official','โทรศัพท์'].map(o=>`<option${v===o?' selected':''}>${o}</option>`).join('')}</select>`;
     else if(r.t==='dt')inp=`<input type="datetime-local" id="mf_${r.k}" value="${esc(dtLocalVal(d[r.k]||''))}">`;
     else if(r.t==='progress')inp=`<select id="mf_${r.k}"><option value="">—</option>${['อยู่ระหว่างการดำเนินการ','รอลูกค้าตอบกลับ','รอนัดหมาย','รอสั่งอะไหล่','สำเร็จ','ไม่สำเร็จ'].map(o=>`<option${v===o.replace(/^[^\s]+ /,'')||v===o?' selected':''}>${o}</option>`).join('')}</select>`;
@@ -601,7 +704,6 @@ function buildFields(d){
   });
   if(ig)h+='</div>';
 
-  // Images section
   const imgs=d.images||{};
   const groups=[['cc','📞 Call Center'],['tech','🔧 ช่าง'],['admin','👤 Admin']];
   let anyImg=groups.some(([k])=>(imgs[k]||[]).length>0);
@@ -627,17 +729,35 @@ function openLightbox(src){
   document.getElementById('lbx').classList.add('on');
 }
 
-// Save
 async function saveDoc(){
   const btn=document.getElementById('saveBtn');
   btn.innerHTML='<span class="spin"></span>บันทึก...';btn.disabled=true;
-  const keys=['name','type','phone','channel','problem','dateStart','dateEnd','progress','action','result','cost','note'];
+  
+  const keys=['name','type','phone','channel','dateStart','dateEnd','progress','action','result','cost','note'];
   const u={};
   keys.forEach(k=>{const el=document.getElementById('mf_'+k);if(el)u[k]=el.value;});
+
+  // ── ประกอบร่างสตริงปัญหาจาก Dropdown ──
+  const typ = document.getElementById('mf_type').value || '';
+  const m_cat = document.getElementById('mf_main_cat').value;
+  const m_cat_txt = m_cat==='อื่นๆ' ? document.getElementById('mf_main_cat_other').value.trim() : m_cat;
+
+  if (typ.startsWith('CI')) {
+     const site = document.getElementById('mf_site_type').value;
+     const pt = document.getElementById('mf_points').value;
+     const pt_txt = pt==='อื่นๆ' ? document.getElementById('mf_points_other').value.trim() : pt;
+     u.problem = `[CI] ระบบ: ${m_cat_txt} | หน้างาน: ${site} | จุด: ${pt_txt}`;
+  } else {
+     const s_cat = document.getElementById('mf_sub_cat').value;
+     const s_cat_txt = s_cat==='อื่นๆ' ? document.getElementById('mf_sub_cat_other').value.trim() : s_cat;
+     u.problem = `${m_cat_txt} > ${s_cat_txt}`;
+  }
+
   const r=u.result||'';
   u.rowColor=r.includes('จบงาน')?'#bbf7d0':r==='ตัดออก'||r==='ลูกค้ายกเลิก'?'#fca5a5':'';
   u.updatedAt=firebase.firestore.FieldValue.serverTimestamp();
   u.updatedBy=auth.currentUser?.email||'';
+  
   try{
     await db.collection('customers').doc(editId).update(u);
     closeModal();toast('✅ บันทึกเรียบร้อยแล้ว');
