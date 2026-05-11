@@ -77,13 +77,20 @@ function doLogout(){auth.signOut().then(()=>location.href='login.html');}
 
 auth.onAuthStateChanged(async u=>{
   if(!u){location.href='login.html';return;}
-  const rd=await db.collection('roles').doc(u.email.toLowerCase())
+  
+  // พระเอกของเราอยู่ตรงนี้ครับ เติม .toLowerCase() เข้าไป
+  const rd=await db.collection('roles').doc(u.email.toLowerCase()).get();
+  
   const role=rd.exists?(rd.data().role||'staff'):'staff';
   if(role!=='admin'){
     document.getElementById('mainWrap').style.display='none';
     document.getElementById('noAccess').style.display='block';
     return;
   }
+  
+  // ถ้าผ่านเงื่อนไข admin มาได้ ให้โหลดรายชื่อผู้ใช้
+  document.getElementById('mainWrap').style.display='block';
+  document.getElementById('noAccess').style.display='none';
   loadUsers();
 });
 
