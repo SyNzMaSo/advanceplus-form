@@ -213,6 +213,16 @@ th { position: relative; }
 .type-pill span { color: #166534; opacity: 0.7; }
 @media (max-width: 600px) { .dashboard-grid { grid-template-columns: 1fr; } }
 
+/* ระบบสีแบบ Excel */
+.color-popup { position:absolute; top:34px; left:0; background:var(--white); border:1px solid var(--border); box-shadow:var(--shadow); border-radius:10px; padding:10px; width:200px; display:none; z-index:99; cursor:default; }
+.color-popup.show { display:block; }
+.pop-title { font-size:.65rem; color:var(--txt-dim); margin-bottom:6px; font-weight:700; }
+.swatch-grid { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+.swatch { width:22px; height:22px; border-radius:4px; border:1px solid rgba(0,0,0,.15); cursor:pointer; transition:transform .1s; }
+.swatch:hover { transform:scale(1.2); box-shadow:0 2px 6px rgba(0,0,0,.2); z-index:2; position:relative; }
+.pop-custom { display:block; text-align:center; background:var(--inp); border:1px dashed var(--border); border-radius:6px; padding:5px 0; font-size:.68rem; cursor:pointer; color:var(--txt-2); transition:all .2s; }
+.pop-custom:hover { border-style:solid; border-color:var(--g-md); color:var(--g-md); }
+
 </style>
 </head>
 <body>
@@ -233,19 +243,49 @@ th { position: relative; }
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     <input id="searchEl" placeholder="ค้นหาชื่อ, เบอร์, ปัญหา..." oninput="applyFilter()">
   </div>
+  
+  <select id="sortEl" class="tbtn" style="height:34px; padding:0 1.8rem 0 .8rem; appearance:auto; cursor:pointer;" onchange="handleSortChange()">
+    <option value="0_desc">🕒 เวลา: ใหม่ ➔ เก่า</option>
+    <option value="0_asc">🕒 เวลา: เก่า ➔ ใหม่</option>
+    <option value="1_asc">🔤 ชื่อ: ก ➔ ฮ</option>
+    <option value="1_desc">🔤 ชื่อ: ฮ ➔ ก</option>
+    <option value="2_asc">📋 ประเภท: A ➔ Z</option>
+    <option value="10_asc">📌 สถานะงาน</option>
+  </select>
+
   <span class="rcount" id="rcountEl">—</span>
 </div>
 
-<div class="color-bar" id="colorBar" style="display:none; flex-wrap:wrap;">
-  <span class="color-bar-lbl">🎨 พื้นหลัง:</span>
-  <input type="color" id="customBg" value="#ffffff" title="เลือกสีพื้นหลัง" onchange="applyRowColor(this.value)" style="width:24px;height:24px;cursor:pointer;border:none;padding:0;border-radius:4px;">
+<div class="color-bar" id="colorBar" style="display:none; flex-wrap:wrap; align-items:center;">
+  <span class="color-bar-lbl" style="margin-right:6px;">🎨 ไฮไลท์:</span>
   
-  <span class="color-bar-lbl" style="margin-left:8px;">🔤 อักษร:</span>
-  <input type="color" id="customText" value="#000000" title="เลือกสีตัวอักษร" onchange="applyRowTextColor(this.value)" style="width:24px;height:24px;cursor:pointer;border:none;padding:0;border-radius:4px;">
-  
-  <button class="cp-clear" onclick="toggleRowBold()" style="margin-left:8px; font-weight:900; color:#1a2e1a;">B</button>
-  
-  <span class="cp-clear" style="margin-left:4px;" onclick="applyRowColor('')">✕ ล้างรูปแบบ</span>
+  <div style="position:relative;">
+    <button class="cp-clear" onclick="togglePop('popBg', event)" style="display:flex;align-items:center;gap:4px;height:26px;">
+      <div style="width:12px;height:12px;background:#bbf7d0;border:1px solid var(--border);border-radius:2px;"></div> พื้นหลัง ▾
+    </button>
+    <div id="popBg" class="color-popup">
+      <div class="pop-title">สีมาตรฐาน</div>
+      <div class="swatch-grid" id="swBgStd"></div>
+      <div class="pop-title">ใช้ล่าสุด</div>
+      <div class="swatch-grid" id="swBgRec" style="min-height:22px;"></div>
+      <label class="pop-custom">เลือกสีเพิ่มเติม... <input type="color" onchange="applyExcelColor('bg', this.value)" style="display:none;"></label>
+    </div>
+  </div>
+
+  <div style="position:relative; margin-left:6px;">
+    <button class="cp-clear" onclick="togglePop('popTxt', event)" style="display:flex;align-items:center;gap:4px;height:26px;">
+      <div style="width:12px;height:12px;background:#dc2626;border:1px solid var(--border);border-radius:2px;"></div> อักษร ▾
+    </button>
+    <div id="popTxt" class="color-popup">
+      <div class="pop-title">สีมาตรฐาน</div>
+      <div class="swatch-grid" id="swTxtStd"></div>
+      <div class="pop-title">ใช้ล่าสุด</div>
+      <div class="swatch-grid" id="swTxtRec" style="min-height:22px;"></div>
+      <label class="pop-custom">เลือกสีเพิ่มเติม... <input type="color" onchange="applyExcelColor('txt', this.value)" style="display:none;"></label>
+    </div>
+  </div>
+
+  <button class="cp-clear" style="margin-left:8px;" onclick="applyRowColor(''); applyRowTextColor('');">✕ ล้างสี</button>
   
   <div style="width:1px;height:18px;background:var(--border);flex-shrink:0;margin:0 8px;"></div>
   
@@ -515,6 +555,15 @@ function applyTabFilter(){
   applyFilter();
 }
 
+// ฟังก์ชันจัดการเมื่อเลือก Dropdown เรียงลำดับ
+function handleSortChange() {
+  const val = document.getElementById('sortEl').value;
+  const parts = val.split('_'); // แยกค่า เช่น "0_desc" ออกเป็น [0, "desc"]
+  sc = parseInt(parts[0]);      // sc คือคอลัมน์ที่จะเรียง (0=เวลา, 1=ชื่อ, ...)
+  sa = parts[1] === 'asc';      // sa คือทิศทาง (asc=น้อยไปมาก, desc=มากไปน้อย)
+  applyFilter();                // สั่งให้ตารางโหลดใหม่ตามเงื่อนไข
+}
+
 // Filter + Render
 function applyFilter(){
   const q=document.getElementById('searchEl').value.trim().toLowerCase();
@@ -535,7 +584,22 @@ function applyFilter(){
   document.getElementById('rcountEl').textContent=rows.length+' รายการ';
   renderHead(); renderBody(rows);
 }
-function sortBy(i){sc===i?sa=!sa:(sc=i,sa=true);applyFilter();}
+
+// อัปเดตฟังก์ชันเมื่อคลิกหัวตารางให้เชื่อมโยงกับ Dropdown
+function sortBy(i) {
+  sc === i ? sa = !sa : (sc = i, sa = true);
+  
+  // อัปเดตหน้าตา Dropdown ให้ตรงกับที่คลิกหัวตาราง
+  const sel = document.getElementById('sortEl');
+  if (sel) {
+    const targetVal = `${sc}_${sa ? 'asc' : 'desc'}`;
+    // เช็คว่ามีตัวเลือกนี้ใน Dropdown ไหม ถ้ามีให้เปลี่ยนตาม
+    const optionExists = [...sel.options].some(o => o.value === targetVal);
+    if (optionExists) sel.value = targetVal;
+  }
+  
+  applyFilter();
+}
 
 // convert stored datetime string to datetime-local input value
 function dtLocalVal(s){
@@ -687,14 +751,25 @@ async function deleteSelected(){
 
 async function deleteAll(){
   if(window._userRole !== 'admin') { toast('⛔ เฉพาะ Admin เท่านั้นที่ลบได้'); return; }
-  if(!confirm(`⚠️ ลบข้อมูลทั้งหมด ${docs.length} รายการออกจากระบบเลยไหมครับ?\n\nไม่สามารถกู้คืนได้!`))return;
+  
+  // 🌟 ระบบล็อก 2 ชั้น: บังคับให้พิมพ์คำว่า "ยืนยัน"
+  const msg = `⚠️ อันตราย: ลบข้อมูลทั้งหมด!\n\nคุณกำลังจะลบข้อมูลลูกค้าทั้งหมด ${docs.length} รายการออกจากระบบ ซึ่งจะไม่สามารถกู้คืนได้\n\nหากคุณมั่นใจ กรุณาพิมพ์คำว่า "ยืนยัน" ลงในช่องด้านล่างเพื่อดำเนินการต่อ:`;
+  const confirmText = prompt(msg);
+  
+  // ถ้ากด Cancel หรือพิมพ์ไม่ตรงกับคำว่า "ยืนยัน" ให้ยกเลิกทันที
+  if(confirmText !== 'ยืนยัน') {
+    if(confirmText !== null) toast('❌ ยกเลิกการลบ (พิมพ์คำยืนยันไม่ถูกต้อง)');
+    return;
+  }
+
+  // ถ้าพิมพ์ถูกต้อง ถึงจะเริ่มกระบวนการลบ
   const batch=db.batch();
   docs.forEach(d=>batch.delete(db.collection('customers').doc(d._id)));
   await batch.commit();
   selectedRows.clear();
   rowColors={};
   updateSelCount();
-  toast('🗑 ลบทั้งหมดเรียบร้อยแล้ว');
+  toast('🗑 ลบข้อมูลทั้งหมดเรียบร้อยแล้ว');
 }
 
 function initResizers() {
@@ -980,66 +1055,6 @@ function openLightbox(src){
   document.getElementById('lbx').classList.add('on');
 }
 
-async function saveDoc(){
-  const btn=document.getElementById('saveBtn');
-  btn.innerHTML='<span class="spin"></span>บันทึก...';btn.disabled=true;
-  
-  const keys=['name','type','phone','channel','dateStart','dateEnd','cost','note'];
-  const u={};
-  keys.forEach(k=>{const el=document.getElementById('mf_'+k);if(el)u[k]=el.value;});
-
-  // ── ดึงค่าจาก Dropdown ใหม่ (ถ้าระบุอื่นๆ ให้ดึงจากช่องพิมพ์) ──
-  const pSel = document.getElementById('mf_progress').value;
-  u.progress = pSel === 'อื่นๆ' ? document.getElementById('mf_progress_other').value.trim() : pSel;
-
-  const aSel = document.getElementById('mf_action').value;
-  u.action = aSel === 'อื่นๆ' ? document.getElementById('mf_action_other').value.trim() : aSel;
-
-  const rSel = document.getElementById('mf_result').value;
-  u.result = rSel === 'อื่นๆ' ? document.getElementById('mf_result_other').value.trim() : rSel;
-
-  // ── ประกอบร่างสตริงปัญหา ──
-  const typ = document.getElementById('mf_type').value || '';
-  const m_cat = document.getElementById('mf_main_cat').value;
-  const m_cat_txt = m_cat==='อื่นๆ' ? document.getElementById('mf_main_cat_other').value.trim() : m_cat;
-
-  if (typ.startsWith('CI')) {
-     const siteSel = document.getElementById('mf_site_type').value;
-     const site_txt = siteSel === 'อื่นๆ' ? document.getElementById('mf_site_type_other').value.trim() : siteSel;
-     const pt = document.getElementById('mf_points').value;
-     const pt_txt = pt==='อื่นๆ' ? document.getElementById('mf_points_other').value.trim() : pt;
-     u.problem = `[CI] ระบบ: ${m_cat_txt} | หน้างาน: ${site_txt} | จุด: ${pt_txt}`;
-  } else {
-     const s_cat = document.getElementById('mf_sub_cat').value;
-     const s_cat_txt = s_cat==='อื่นๆ' ? document.getElementById('mf_sub_cat_other').value.trim() : s_cat;
-     u.problem = `${m_cat_txt} > ${s_cat_txt}`;
-  }
-
-  // กำหนดสีพื้นหลัง
-  const r = u.result || '';
-  const existingDoc = docs.find(x=>x._id===editId);
-  if(!existingDoc.rowColor && r) {
-     u.rowColor = r.includes('จบงาน') ? '#bbf7d0' : r==='ตัดออก'||r==='ลูกค้ายกเลิก' ? '#fca5a5' : '';
-  }
-  
-  u.updatedAt=firebase.firestore.FieldValue.serverTimestamp();
-  u.updatedBy=auth.currentUser?.email||'';
-  
-  const newImgInput = document.getElementById('mf_new_images');
-  if (newImgInput && newImgInput.files.length > 0) {
-     toast('กำลังประมวลผลรูปภาพ...');
-     const newImgs = await Promise.all(Array.from(newImgInput.files).map(f=>compressImage(f)));
-     const currentCC = (existingDoc.images && existingDoc.images.cc) ? existingDoc.images.cc : [];
-     u.images = { ...(existingDoc.images||{}), cc: [...currentCC, ...newImgs] };
-  }
-  
-  try{
-    await db.collection('customers').doc(editId).update(u);
-    closeModal();toast('✅ บันทึกเรียบร้อยแล้ว');
-  }catch(e){toast('⚠️ '+e.message);}
-  btn.innerHTML='💾 บันทึก';btn.disabled=false;
-}
-
 // Delete
 async function deleteDoc(){
   if(window._userRole!=='admin'&&window._userRole!=='viewer'){ toast('⛔ ไม่มีสิทธิ์ลบข้อมูล'); return; }
@@ -1104,6 +1119,112 @@ function exportToExcel() {
   const fileName = `AdvancePlus_Report_${new Date().toISOString().slice(0,10)}.xlsx`;
   XLSX.writeFile(wb, fileName);
   toast('📂 ส่งออกไฟล์เรียบร้อย!');
+}
+
+// ── ระบบจัดการสีแบบ Excel ──
+const STD_BG = ['#fca5a5','#fcd34d','#fef08a','#bbf7d0','#a7f3d0','#bae6fd','#c7d2fe','#e9d5ff','#fbcfe8','#f3f4f6','#e5e7eb','#d1d5db'];
+const STD_TXT = ['#b91c1c','#b45309','#a16207','#15803d','#047857','#0369a1','#4338ca','#7e22ce','#be185d','#1f2937','#374151','#000000'];
+let recBg = JSON.parse(localStorage.getItem('adv_rec_bg') || '[]');
+let recTxt = JSON.parse(localStorage.getItem('adv_rec_txt') || '[]');
+
+function buildSwatches(arr, type) {
+  return arr.map(c => `<div class="swatch" style="background:${c}" onclick="applyExcelColor('${type}', '${c}')"></div>`).join('');
+}
+function initColorPicker() {
+  const sb = document.getElementById('swBgStd'); if(sb) sb.innerHTML = buildSwatches(STD_BG, 'bg');
+  const st = document.getElementById('swTxtStd'); if(st) st.innerHTML = buildSwatches(STD_TXT, 'txt');
+  renderRecent();
+}
+function renderRecent() {
+  const rb = document.getElementById('swBgRec'); if(rb) rb.innerHTML = buildSwatches(recBg, 'bg');
+  const rt = document.getElementById('swTxtRec'); if(rt) rt.innerHTML = buildSwatches(recTxt, 'txt');
+}
+function togglePop(id, e) {
+  e.stopPropagation();
+  document.querySelectorAll('.color-popup').forEach(el => { if(el.id !== id) el.classList.remove('show'); });
+  document.getElementById(id).classList.toggle('show');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.color-popup')) document.querySelectorAll('.color-popup').forEach(el => el.classList.remove('show'));
+});
+function applyExcelColor(type, color) {
+  let arr = type === 'bg' ? recBg : recTxt;
+  if (!arr.includes(color)) { arr.unshift(color); if (arr.length > 7) arr.pop(); }
+  localStorage.setItem('adv_rec_'+type, JSON.stringify(arr));
+  renderRecent();
+  if (type === 'bg') applyRowColor(color); else applyRowTextColor(color);
+  document.querySelectorAll('.color-popup').forEach(el => el.classList.remove('show'));
+}
+// เปิดระบบจดจำสีทันทีที่โหลดเสร็จ
+document.addEventListener('DOMContentLoaded', initColorPicker);
+
+
+// ── ซ่อมการอัปเดตสีอัตโนมัติตอนแก้ไข ──
+// ── ซ่อมการอัปเดตสีอัตโนมัติตอนแก้ไข (แก้บัคสีค้าง) ──
+async function saveDoc(){
+  const btn=document.getElementById('saveBtn');
+  btn.innerHTML='<span class="spin"></span>บันทึก...';btn.disabled=true;
+  
+  const keys=['name','type','phone','channel','dateStart','dateEnd','cost','note'];
+  const u={};
+  keys.forEach(k=>{const el=document.getElementById('mf_'+k);if(el)u[k]=el.value;});
+
+  const pSel = document.getElementById('mf_progress').value;
+  u.progress = pSel === 'อื่นๆ' ? document.getElementById('mf_progress_other').value.trim() : pSel;
+  const aSel = document.getElementById('mf_action').value;
+  u.action = aSel === 'อื่นๆ' ? document.getElementById('mf_action_other').value.trim() : aSel;
+  const rSel = document.getElementById('mf_result').value;
+  u.result = rSel === 'อื่นๆ' ? document.getElementById('mf_result_other').value.trim() : rSel;
+
+  const typ = document.getElementById('mf_type').value || '';
+  const m_cat = document.getElementById('mf_main_cat').value;
+  const m_cat_txt = m_cat==='อื่นๆ' ? document.getElementById('mf_main_cat_other').value.trim() : m_cat;
+
+  if (typ.startsWith('CI')) {
+     const siteSel = document.getElementById('mf_site_type').value;
+     const site_txt = siteSel === 'อื่นๆ' ? document.getElementById('mf_site_type_other').value.trim() : siteSel;
+     const pt = document.getElementById('mf_points').value;
+     const pt_txt = pt==='อื่นๆ' ? document.getElementById('mf_points_other').value.trim() : pt;
+     u.problem = `[CI] ระบบ: ${m_cat_txt} | หน้างาน: ${site_txt} | จุด: ${pt_txt}`;
+  } else {
+     const s_cat = document.getElementById('mf_sub_cat').value;
+     const s_cat_txt = s_cat==='อื่นๆ' ? document.getElementById('mf_sub_cat_other').value.trim() : s_cat;
+     u.problem = `${m_cat_txt} > ${s_cat_txt}`;
+  }
+
+  // 🌟 อัปเกรดการเช็คคำให้ครอบคลุมขึ้น
+  const r = u.result || '';
+  const p = u.progress || '';
+  if (r.includes('จบงาน') || p.includes('สำเร็จ')) {
+     u.rowColor = '#bbf7d0'; // สีเขียว
+  } else if (r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ')) {
+     u.rowColor = '#fca5a5'; // สีแดง
+  } else {
+     u.rowColor = ''; // ล้างสี
+  }
+  
+  // 🌟 จุดสำคัญ: ล้างความจำสีเก่าที่ตารางมันจำไว้ทิ้งไป!
+  if (typeof rowColors !== 'undefined' && rowColors[editId]) {
+     delete rowColors[editId];
+  }
+  
+  u.updatedAt=firebase.firestore.FieldValue.serverTimestamp();
+  u.updatedBy=auth.currentUser?.email||'';
+  
+  const newImgInput = document.getElementById('mf_new_images');
+  const existingDoc = docs.find(x=>x._id===editId);
+  if (newImgInput && newImgInput.files.length > 0) {
+     toast('กำลังประมวลผลรูปภาพ...');
+     const newImgs = await Promise.all(Array.from(newImgInput.files).map(f=>compressImage(f)));
+     const currentCC = (existingDoc.images && existingDoc.images.cc) ? existingDoc.images.cc : [];
+     u.images = { ...(existingDoc.images||{}), cc: [...currentCC, ...newImgs] };
+  }
+  
+  try{
+    await db.collection('customers').doc(editId).update(u);
+    closeModal();toast('✅ บันทึกเรียบร้อยแล้ว');
+  }catch(e){toast('⚠️ '+e.message);}
+  btn.innerHTML='💾 บันทึก';btn.disabled=false;
 }
 
 </script>
