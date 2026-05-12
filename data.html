@@ -199,6 +199,20 @@ th { position: relative; }
 .resizer { position: absolute; right: 0; top: 0; bottom: 0; width: 6px; cursor: col-resize; z-index: 11; transition: background 0.2s; }
 .resizer:hover, .resizer.resizing { background: var(--g-md); opacity: 0.8; }
 
+/* Dashboard CSS */
+.dashboard-grid { display: grid; grid-template-columns: 220px 1fr; gap: 15px; margin-bottom: 10px; }
+.stat-card { background: var(--white); padding: 15px 20px; border-radius: 15px; border: 1px solid var(--border); box-shadow: var(--shadow); display: flex; align-items: center; }
+.stat-label { font-size: 0.75rem; color: var(--txt-2); font-weight: 600; text-transform: uppercase; }
+.stat-value { font-size: 2.5rem; font-weight: 700; color: var(--g-dk); line-height: 1.2; }
+.summary-list { display: flex; gap: 10px; overflow-x: auto; padding: 5px 0; scrollbar-width: thin; }
+.summary-item { background: var(--inp); padding: 10px 15px; border-radius: 12px; min-width: 140px; border: 1px solid var(--border); flex-shrink: 0; }
+.summary-date { font-size: 0.7rem; font-weight: 700; margin-bottom: 5px; color: var(--txt); }
+.summary-mini-list { font-size: 0.65rem; color: var(--txt-2); line-height: 1.5; }
+.breakdown-container { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.type-pill { font-size: 0.65rem; font-weight: 700; padding: 3px 8px; border-radius: 12px; background: var(--g-pale); color: var(--g-dk); border: 1px solid var(--border); display: flex; gap: 4px; }
+.type-pill span { color: #166534; opacity: 0.7; }
+@media (max-width: 600px) { .dashboard-grid { grid-template-columns: 1fr; } }
+
 </style>
 </head>
 <body>
@@ -238,6 +252,22 @@ th { position: relative; }
   <button class="del-sel-btn" onclick="deleteSelected()" style="height:26px;padding:0 .6rem;border-radius:6px;border:1px solid #fca5a5;background:#fee2e2;color:#b91c1c;font-family:'Kanit',sans-serif;font-size:.7rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;margin-right:4px;">🗑 ลบที่เลือก</button>
   <button onclick="deleteAll()" style="height:26px;padding:0 .6rem;border-radius:6px;border:1px solid #fca5a5;background:#fee2e2;color:#b91c1c;font-family:'Kanit',sans-serif;font-size:.7rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">🗑 ลบทั้งหมด</button>
   <span class="sel-count" id="selCount" style="margin-left:8px;"></span>
+</div>
+
+<div class="dashboard-grid" style="padding: 10px 1.1rem;">
+  <div class="stat-card today">
+    <div class="stat-info">
+      <div class="stat-label">⭐ สรุปยอดวันนี้</div>
+      <div class="stat-value" id="todayCount">0</div>
+      <div id="todayBreakdown" class="breakdown-container"></div>
+    </div>
+  </div>
+  <div class="stat-card history">
+    <div class="stat-info" style="width:100%">
+      <div class="stat-label">📊 สถิติรายวันย้อนหลัง</div>
+      <div id="dailySummaryList" class="summary-list"></div>
+    </div>
+  </div>
 </div>
 
 <div style="overflow-x:auto;padding:0 1.1rem 6rem;">
@@ -384,6 +414,7 @@ function init(){
     
     // เมื่อดึงข้อมูลเสร็จ ให้สั่งอัปเดตตัวเลขและคัดกรอง Tab
     updateCounts();
+    updateDailyDashboard();
     applyTabFilter();
   });
 }
@@ -419,6 +450,54 @@ function updateCounts(){
     else n=docs.filter(d=>(d.type||'').toUpperCase()===t.toUpperCase()).length;
     const e=document.getElementById('n_'+t); if(e)e.textContent=n;
   });
+}
+
+// ฟังก์ชันคำนวณยอด Dashboard
+function updateDailyDashboard() {
+  const summary = {}; 
+  const todayStr = new Date().toLocaleDateString('th-TH');
+
+  docs.forEach(d => {
+    if (!d.timestamp) return;
+    const date = d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp);
+    const dStr = date.toLocaleDateString('th-TH');
+    const type = d.type || 'ไม่ระบุ';
+
+    if (!summary[dStr]) summary[dStr] = { total: 0, types: {} };
+    summary[dStr].total++;
+    summary[dStr].types[type] = (summary[dStr].types[type] || 0) + 1;
+  });
+
+  const todayData = summary[todayStr] || { total: 0, types: {} };
+  const todayCountEl = document.getElementById('todayCount');
+  if(todayCountEl) todayCountEl.textContent = todayData.total;
+  
+  const todayBreakdownEl = document.getElementById('todayBreakdown');
+  if(todayBreakdownEl) {
+    todayBreakdownEl.innerHTML = Object.entries(todayData.types).map(([type, count]) => `
+      <div class="type-pill">${type} <span>x${count}</span></div>
+    `).join('') || '<div style="font-size:0.7rem; color:var(--txt-dim)">ยังไม่มีงานวันนี้</div>';
+  }
+
+  const summaryList = document.getElementById('dailySummaryList');
+  if(summaryList) {
+    // เรียงวันที่จากใหม่ไปเก่า และ "ตัดมาแค่ 10 วันล่าสุด" (เปลี่ยนเลข 10 เป็น 7 หรือ 15 ได้ตามต้องการครับ)
+  const sortedDates = Object.keys(summary)
+    .sort((a,b) => new Date(b.split('/').reverse().join('-')) - new Date(a.split('/').reverse().join('-')))
+    .slice(0, 10);
+    summaryList.innerHTML = sortedDates.map(date => {
+      const data = summary[date];
+      return `
+        <div class="summary-item">
+          <div class="summary-date">${date === todayStr ? '☀️ วันนี้' : date}</div>
+          <div class="summary-num" style="font-size:1.1rem; color:var(--g-dk); font-weight:700;">${data.total} เคส</div>
+          <div class="summary-mini-list">
+            ${Object.entries(data.types).map(([t,c]) => `${t}: ${c}`).join('<br>')}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
 }
 
 function applyTabFilter(){

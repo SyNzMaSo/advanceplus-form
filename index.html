@@ -690,15 +690,18 @@
         <label for="f_site_type">ลักษณะหน้างาน <span class="req">*</span></label>
         <div class="input-wrap">
           <svg class="input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          <select id="f_site_type" onchange="updateFilled(this)">
+          <select id="f_site_type" onchange="onSiteTypeChange()">
             <option value="" disabled selected>— เลือกลักษณะหน้างาน —</option>
-            <option>โรงงาน / คลังสินค้า</option><option>อพาร์ทเมนท์</option>
-            <option>บ้านเดี่ยว</option><option>อาคารพาณิชย์</option>
-            <option>ร้านค้ามินิมาร์ท</option><option>บ้านทาวน์เฮ้าส์</option>
-            <option>ออฟฟิศทาวน์โฮม</option><option>ร้านอาหาร / กาแฟ</option>
-            <option>ลานจอดรถบัส</option><option>หมู่บ้าน</option>
+            <option>ที่พักอาศัย (บ้าน / คอนโด / หมู่บ้าน)</option>
+            <option>ธุรกิจ (ออฟฟิศ / ร้านค้า / อาคารพาณิชย์)</option>
+            <option>อุตสาหกรรม (โรงงาน / โกดัง / ลานจอด)</option>
+            <option>ไซต์งาน / โครงการ</option>
+            <option value="อื่นๆ">อื่นๆ (ระบุเอง)</option>
           </select>
           <span class="sel-arrow">▾</span>
+        </div>
+        <div class="fg" id="fg_site_type_other" style="display:none; margin-top:8px;">
+          <input type="text" class="cz-input" id="f_site_type_other" placeholder="ระบุหน้างานเพิ่มเติม..." oninput="updateFilled(this)">
         </div>
         <div class="err-msg" id="err_site_type"><svg width="10" height="10" viewBox="0 0 24 24" fill="var(--red)"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16v.5" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>กรุณาเลือกลักษณะหน้างาน</div>
       </div>
@@ -797,13 +800,12 @@
           <svg class="input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           <select id="f_progress" onchange="onProgressChange()">
             <option value="" disabled selected>เลือกสถานะ</option>
-            <option value="อยู่ระหว่างการดำเนินการ">🟡 อยู่ระหว่างการดำเนินการ</option>
+            <option value="อยู่ระหว่างดำเนินการ">🟡 อยู่ระหว่างดำเนินการ</option>
             <option value="รอลูกค้าตอบกลับ">⏳ รอลูกค้าตอบกลับ</option>
-            <option value="รอนัดหมาย">📅 รอนัดหมาย</option>
-            <option value="รอสั่งอะไหล่">🔩 รอสั่งอะไหล่</option>
+            <option value="รอนัดหมาย / รออะไหล่">📅 รอนัดหมาย / รออะไหล่</option>
             <option value="สำเร็จ">✅ สำเร็จ</option>
-            <option value="ไม่สำเร็จ">❌ ไม่สำเร็จ</option>
-            <option value="อื่นๆ">📝 อื่นๆ</option>
+            <option value="ไม่สำเร็จ / ยกเลิก">❌ ไม่สำเร็จ / ยกเลิก</option>
+            <option value="อื่นๆ">📝 อื่นๆ (ระบุเอง)</option>
           </select>
           <span class="sel-arrow">▾</span>
         </div>
@@ -811,7 +813,6 @@
           <input type="text" class="cz-input" id="f_progress_other" placeholder="ระบุความคืบหน้าเพิ่มเติม..." oninput="updateFilled(this)">
         </div>
         <div class="err-msg" id="err_progress"><svg width="10" height="10" viewBox="0 0 24 24" fill="var(--red)"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16v.5" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>กรุณาเลือกความคืบหน้า</div>
-        <div class="err-msg" id="err_progress_other"><svg width="10" height="10" viewBox="0 0 24 24" fill="var(--red)"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16v.5" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>กรุณาระบุความคืบหน้า</div>
       </div>
 
       <div class="fg">
@@ -821,18 +822,13 @@
           <select id="f_action" onchange="onActionChange()">
             <option value="" disabled selected>— เลือกการดำเนินการ —</option>
             <option>แจ้งช่างเข้าพื้นที่</option>
-            <option>ตรวจสอบระบบ</option>
-            <option>ปรับตั้งค่าระบบ</option>
-            <option>ซ่อมแซมอุปกรณ์</option>
-            <option>เปลี่ยนอุปกรณ์</option>
-            <option>ติดตั้งอุปกรณ์เพิ่มเติม</option>
-            <option>แก้ไขสายสัญญาณ</option>
-            <option>อัพเดทซอฟต์แวร์ / Firmware</option>
-            <option>รอสั่งอะไหล่</option>
-            <option>นัดหมายครั้งถัดไป</option>
+            <option>ตรวจสอบ / ปรับตั้งค่าระบบ</option>
+            <option>ซ่อมแซม / เปลี่ยนอุปกรณ์</option>
+            <option>ติดตั้ง / เดินสายเพิ่มเติม</option>
+            <option>นัดหมาย / รอสั่งอะไหล่</option>
             <option>แจ้งผลให้ลูกค้าทราบ</option>
             <option value="ส่งรีวิว 5 ดาว">🌟 ส่งรีวิว 5 ดาว</option>
-            <option>อื่นๆ</option>
+            <option value="อื่นๆ">📝 อื่นๆ (ระบุเอง)</option>
           </select>
           <span class="sel-arrow">▾</span>
         </div>
@@ -855,14 +851,10 @@
           <select id="f_result" onchange="onResultChange()">
             <option value="">— ยังไม่ระบุ —</option>
             <option value="จบงานเรียบร้อย">✅ จบงานเรียบร้อย</option>
-            <option value="จบงาน — รอเก็บเงิน">💰 จบงาน — รอเก็บเงิน</option>
-            <option value="จบงาน — รอโอนเงิน">🏦 จบงาน — รอโอนเงิน</option>
-            <option value="จบงาน — เครดิต">📋 จบงาน — เครดิต</option>
+            <option value="จบงาน — รอชำระเงิน">💰 จบงาน — รอชำระเงิน</option>
             <option value="นัดซ่อมครั้งถัดไป">🔄 นัดซ่อมครั้งถัดไป</option>
-            <option value="รอลูกค้าชำระ">💳 รอลูกค้าชำระ</option>
-            <option value="ลูกค้ายกเลิก">🚫 ลูกค้ายกเลิก</option>
-            <option value="ตัดออก">❌ ตัดออก</option>
-            <option value="อื่นๆ">📝 อื่นๆ</option>
+            <option value="ยกเลิก / ตัดออก">❌ ยกเลิก / ตัดออก</option>
+            <option value="อื่นๆ">📝 อื่นๆ (ระบุเอง)</option>
           </select>
           <span class="sel-arrow">▾</span>
         </div>
@@ -1161,19 +1153,25 @@ function _show(id, visible) {
 }
 
 function _resetCascadeFields() {
-  ['f_site_type','f_main_cat','f_main_cat_other','f_points','f_points_other','f_sub_cat','f_sub_cat_other']
-    .forEach(id => {
-      const el = document.getElementById(id); if (!el) return;
-      el.value = ''; el.classList.remove('has-val','field-err');
-    });
-  ['err_site_type','err_main_cat','err_main_cat_other','err_points','err_points_other','err_sub_cat','err_sub_cat_other']
-    .forEach(id => document.getElementById(id).classList.remove('show'));
-  _show('fg_main_cat_other', false);
-  _show('fg_points_other',   false);
-  _show('fg_sub_cat_other',  false);
+  const cascadeIds = [
+    'f_site_type', 'f_site_type_other', 'f_main_cat', 'f_main_cat_other',
+    'f_points', 'f_points_other', 'f_sub_cat', 'f_sub_cat_other'
+  ];
+  cascadeIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.value = ''; el.classList.remove('has-val', 'field-err'); }
+  });
+
+  ['fg_site_type_other', 'fg_main_cat_other', 'fg_points_other', 'fg_sub_cat_other'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.style.display = 'none';
+  });
+
   const subSel = document.getElementById('f_sub_cat');
-  subSel.innerHTML = '<option value="" disabled selected>— เลือกระบบก่อน —</option>';
-  subSel.disabled = true;
+  if(subSel) {
+    subSel.innerHTML = '<option value="" disabled selected>— เลือกระบบก่อน —</option>';
+    subSel.disabled = true;
+  }
 }
 
 // ─── CASCADING DROPDOWNS DATA ───
@@ -1270,22 +1268,17 @@ function onPointsChange() {
 function getProblemValue() {
   const type    = document.getElementById('f_type').value;
   const mainRaw = document.getElementById('f_main_cat').value;
-  const mainTxt = mainRaw === 'อื่นๆ'
-    ? (document.getElementById('f_main_cat_other').value.trim() || 'อื่นๆ')
-    : mainRaw;
+  const mainTxt = mainRaw === 'อื่นๆ' ? (document.getElementById('f_main_cat_other').value.trim() || 'อื่นๆ') : mainRaw;
 
   if (type && type.startsWith('CI')) {
-    const site   = document.getElementById('f_site_type').value;
+    const siteRaw   = document.getElementById('f_site_type').value;
+    const site      = siteRaw === 'อื่นๆ' ? (document.getElementById('f_site_type_other')?.value.trim() || 'อื่นๆ') : siteRaw;
     const pointsRaw = document.getElementById('f_points').value;
-    const points = pointsRaw === 'อื่นๆ'
-      ? (document.getElementById('f_points_other').value.trim() || 'อื่นๆ')
-      : pointsRaw;
+    const points = pointsRaw === 'อื่นๆ' ? (document.getElementById('f_points_other').value.trim() || 'อื่นๆ') : pointsRaw;
     return `[CI] ระบบ: ${mainTxt} | หน้างาน: ${site} | จุด: ${points}`;
   } else {
     const subRaw = document.getElementById('f_sub_cat').value;
-    const subTxt = subRaw === 'อื่นๆ'
-      ? (document.getElementById('f_sub_cat_other').value.trim() || 'อื่นๆ')
-      : subRaw;
+    const subTxt = subRaw === 'อื่นๆ' ? (document.getElementById('f_sub_cat_other').value.trim() || 'อื่นๆ') : subRaw;
     return `${mainTxt} > ${subTxt}`;
   }
 }
@@ -1415,56 +1408,55 @@ function showToastMsg(msg) {
 }
 
 // ─── RESET ───
+// ฟังก์ชันสั่งเปิดช่องพิมพ์หน้างาน
+function onSiteTypeChange() {
+  const val = document.getElementById('f_site_type').value;
+  _show('fg_site_type_other', val === 'อื่นๆ');
+  updateFilled(document.getElementById('f_site_type'));
+  hideErr('f_site_type', 'err_site_type');
+}
+
 function resetForm() {
-  // 1. ล้างค่าช่องกรอกทั้งหมด รวมถึงช่อง "อื่นๆ" ที่เพิ่งสร้างใหม่
-  const allInputs = [
+  // 1. ล้างค่าช่องกรอกทั้งหมดทุกช่องบนหน้าจอ
+  const allIds = [
     'f_name','f_phone','f_phone_prefix','f_type','f_channel','f_date_start',
-    'f_progress','f_progress_other',
-    'f_action','f_action_other',
-    'f_result','f_result_other',
-    'f_cost','f_note','f_date_end'
+    'f_progress','f_progress_other','f_action','f_action_other',
+    'f_result','f_result_other','f_cost','f_note','f_date_end',
+    'f_site_type', 'f_site_type_other', 'f_main_cat', 'f_main_cat_other',
+    'f_points', 'f_points_other', 'f_sub_cat', 'f_sub_cat_other'
   ];
-  allInputs.forEach(id => {
+  allIds.forEach(id => {
     const el = document.getElementById(id); 
     if(el) { el.value = ''; el.classList.remove('has-val'); }
   });
   
-  // 2. สั่งซ่อนช่อง "อื่นๆ" ให้กลับไปพับเก็บเหมือนเดิม
-  _show('fg_progress_other', false);
-  _show('fg_result_other', false);
-  _show('fg_action_other', false);
-  
-  // 3. รีเซ็ตระบบที่ลิงก์กัน (ช่องหน้างาน/อาการ)
-  _show('fg_main_cat', false); 
-  _show('fg_site_type', false);
-  _show('fg_points', false);   
-  _show('fg_sub_cat', false);
-  if (typeof _resetCascadeFields === 'function') _resetCascadeFields();
-
-  // 4. ล้างการนับตัวอักษร
-  const ccAction = document.getElementById('cc_action');
-  if(ccAction) ccAction.textContent = '0 / 300';
-  
-  // 5. ล้างจุดสีเขียว/แดงของเบอร์โทร
-  if (typeof phoneDots !== 'undefined') {
-    phoneDots.forEach(d => { d.style.background = ''; });
-  }
-  const phoneRemain = document.getElementById('phoneRemain');
-  if(phoneRemain) phoneRemain.textContent = '';
-  const phoneFilled = document.getElementById('phoneFilled');
-  if(phoneFilled) phoneFilled.textContent = '';
-
-  // 6. ล้างรูปภาพแนบ
-  ['cc','tech','admin'].forEach(role => { 
-    if (typeof UPLOAD_FILES !== 'undefined' && UPLOAD_FILES[role]) {
-        UPLOAD_FILES[role] = []; 
-        if (typeof renderPreviews === 'function') renderPreviews(role); 
-    }
+  // 2. สั่งซ่อนช่อง "อื่นๆ" และช่องที่แยกตามประเภท (CI/CS)
+  const hideGroups = [
+    'fg_progress_other', 'fg_result_other', 'fg_action_other',
+    'fg_site_type', 'fg_site_type_other', 'fg_main_cat', 'fg_main_cat_other',
+    'fg_points', 'fg_points_other', 'fg_sub_cat', 'fg_sub_cat_other'
+  ];
+  hideGroups.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.style.display = 'none';
   });
+
+  // 3. รีเซ็ตช่อง "ปัญหา/อาการ" ให้กลับไปล็อกไว้เหมือนตอนเริ่ม
+  const subSel = document.getElementById('f_sub_cat');
+  if(subSel) {
+    subSel.innerHTML = '<option value="" disabled selected>— เลือกระบบก่อน —</option>';
+    subSel.disabled = true;
+  }
   
-  // 7. ล้างกรอบสีแดงแจ้งเตือนที่ค้างอยู่
-  document.querySelectorAll('.field-err').forEach(el => el.classList.remove('field-err'));
-  document.querySelectorAll('.err-msg.show').forEach(el => el.classList.remove('show'));
+  // 4. ล้างส่วนอื่นๆ (รูปภาพ, จุดเบอร์โทร, นับตัวอักษร)
+  if(typeof phoneDots !== 'undefined') phoneDots.forEach(d=>{ d.style.background=''; });
+  const pr = document.getElementById('phoneRemain'); if(pr) pr.textContent='';
+  const pf = document.getElementById('phoneFilled'); if(pf) pf.textContent='';
+  const ca = document.getElementById('cc_action'); if(ca) ca.textContent='0 / 300';
+  ['cc','tech','admin'].forEach(role => { if(typeof UPLOAD_FILES !== 'undefined' && UPLOAD_FILES[role]) { UPLOAD_FILES[role] = []; renderPreviews(role); }});
+  
+  document.querySelectorAll('.field-err').forEach(el=>el.classList.remove('field-err'));
+  document.querySelectorAll('.err-msg.show').forEach(el=>el.classList.remove('show'));
 }
 
 // ─── SUBMIT ───
@@ -1603,17 +1595,17 @@ function clearTicket() {
   document.getElementById('ticket_result').innerHTML = '';
   resetForm();
 }
+  
 function _getPayload() {
   const prefix = document.getElementById('f_phone_prefix').value;
   const rawPhone = document.getElementById('f_phone').value.trim();
   
-  // ดึงค่าความคืบหน้า (ถ้าเลือกอื่นๆ ให้เอาข้อความที่พิมพ์มาใช้)
-  const progSel = document.getElementById('f_progress').value;
-  const progVal = (progSel === 'อื่นๆ') ? document.getElementById('f_progress_other').value.trim() : progSel;
-  
-  // ดึงค่าสถานะงาน (ถ้าเลือกอื่นๆ ให้เอาข้อความที่พิมพ์มาใช้)
-  const resSel = document.getElementById('f_result').value;
-  const resVal = (resSel === 'อื่นๆ') ? document.getElementById('f_result_other').value.trim() : resSel;
+  // ตัวช่วยดึงข้อมูล ถ้าเลือกอื่นๆ ให้เอาข้อความที่พิมพ์มาส่ง
+  const getVal = (id) => {
+    const sel = document.getElementById(id).value;
+    const other = document.getElementById(id + '_other');
+    return (sel === 'อื่นๆ' && other) ? other.value.trim() : sel;
+  };
 
   return {
     name:      document.getElementById('f_name').value.trim(),
@@ -1623,11 +1615,10 @@ function _getPayload() {
     problem:   getProblemValue(),
     dateStart: document.getElementById('f_date_start').value,
     dateEnd:   document.getElementById('f_date_end')?.value || '',
-    progress:  progVal, 
-    action:    getActionValue(),
-    result:    resVal,  
-    // ปรับตรงนี้: ถ้าไม่มีการกรอกค่า (trim แล้วว่าง) ให้ส่ง '0' ไปแทน
-    cost:      document.getElementById('f_cost')?.value.trim() || '0', 
+    progress:  getVal('f_progress'), 
+    action:    getActionValue(), // ใช้ฟังก์ชันของมันเอง
+    result:    getVal('f_result'),  
+    cost:      document.getElementById('f_cost')?.value.trim() || '0',
     note:      document.getElementById('f_note')?.value.trim() || '',
   };
 }
