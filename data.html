@@ -804,6 +804,28 @@ function modTypeChange(){
   if(csZone) csZone.style.display = isCI?'none':'block';
 }
 
+// --- ฟังก์ชันควบคุมช่อง "อื่นๆ" ในหน้าต่างแก้ไข ---
+function modSiteChange(){
+  const v = document.getElementById('mf_site_type').value;
+  const div = document.getElementById('mf_site_type_other_div');
+  if(div) div.style.display = v==='อื่นๆ'?'block':'none';
+}
+function modProgressChange(){
+  const v = document.getElementById('mf_progress').value;
+  const div = document.getElementById('mf_progress_other_div');
+  if(div) div.style.display = v==='อื่นๆ'?'block':'none';
+}
+function modActionChange(){
+  const v = document.getElementById('mf_action').value;
+  const div = document.getElementById('mf_action_other_div');
+  if(div) div.style.display = v==='อื่นๆ'?'block':'none';
+}
+function modResultChange(){
+  const v = document.getElementById('mf_result').value;
+  const div = document.getElementById('mf_result_other_div');
+  if(div) div.style.display = v==='อื่นๆ'?'block':'none';
+}
+
 function buildFields(d){
   const rows=[
     {sec:'📞 Call Center'},
@@ -834,9 +856,7 @@ function buildFields(d){
        } else if(pv.includes(' > ')){
           const m = pv.split(' > ');
           m_cat = m[0].trim(); s_cat = m[1] ? m[1].trim() : '';
-       } else {
-          m_cat = pv;
-       }
+       } else { m_cat = pv; }
 
        let isMainOther = m_cat && !['กล้อง Digital','กล้อง Analog','เครื่องบันทึก NVR','ระบบ Network','อื่นๆ',''].includes(m_cat);
        let mainSelVal = isMainOther ? 'อื่นๆ' : m_cat;
@@ -847,11 +867,16 @@ function buildFields(d){
        let subSelVal = isSubOther ? 'อื่นๆ' : s_cat;
        let subOtherVal = isSubOther ? s_cat : '';
 
+       const siteOpts = ['ที่พักอาศัย (บ้าน / คอนโด / หมู่บ้าน)','ธุรกิจ (ออฟฟิศ / ร้านค้า / อาคารพาณิชย์)','อุตสาหกรรม (โรงงาน / โกดัง / ลานจอด)','ไซต์งาน / โครงการ'];
+       let isSiteOther = site && !siteOpts.includes(site) && site !== '';
+       let siteSelVal = isSiteOther ? 'อื่นๆ' : site;
+       let siteOtherVal = isSiteOther ? site : '';
+
        let isPtsOther = pts && !['1','2','3','4','5','6','8','10','12','16','20','24','32','','อื่นๆ'].includes(pts);
        let ptsSelVal = isPtsOther ? 'อื่นๆ' : pts;
        let ptsOtherVal = isPtsOther ? pts : '';
 
-       let probHtml = `
+       h += `
          <div style="grid-column:1/-1; border:1px solid var(--border); border-radius:11px; padding:12px; background:var(--row-alt); margin-bottom:8px;">
            <div style="font-size:.68rem;font-weight:700;color:var(--g-md);margin-bottom:8px;">🛠 ระบบจัดการปัญหา (Dropdown)</div>
            <div class="mgrid" style="margin-bottom:8px">
@@ -861,21 +886,23 @@ function buildFields(d){
              </select></div>
              <div class="mfg" id="mf_main_cat_other_div" style="display:${isMainOther?'block':'none'}"><label>ระบุชื่อระบบ</label><input type="text" id="mf_main_cat_other" value="${mainOtherVal}"></div>
            </div>
-
            <div id="mf_ci_zone" style="display:${isCI?'block':'none'}">
              <div class="mgrid">
-               <div class="mfg"><label>ลักษณะหน้างาน</label><select id="mf_site_type">
+               <div class="mfg"><label>ลักษณะหน้างาน</label><select id="mf_site_type" onchange="modSiteChange()">
                  <option value="">— เลือกลักษณะหน้างาน —</option>
-                 ${['โรงงาน / คลังสินค้า','อพาร์ทเมนท์','บ้านเดี่ยว','อาคารพาณิชย์','ร้านค้ามินิมาร์ท','บ้านทาวน์เฮ้าส์','ออฟฟิศทาวน์โฮม','ร้านอาหาร / กาแฟ','ลานจอดรถบัส','หมู่บ้าน'].map(o=>`<option${site===o?' selected':''}>${o}</option>`).join('')}
+                 ${siteOpts.map(o=>`<option${siteSelVal===o?' selected':''}>${o}</option>`).join('')}
+                 <option${siteSelVal==='อื่นๆ'?' selected':''}>อื่นๆ</option>
                </select></div>
                <div class="mfg"><label>จำนวนจุด</label><select id="mf_points" onchange="modPointsChange()">
                  <option value="">— เลือกจำนวนจุด —</option>
                  ${['1','2','3','4','5','6','8','10','12','16','20','24','32','อื่นๆ'].map(o=>`<option${ptsSelVal===o?' selected':''}>${o}</option>`).join('')}
                </select></div>
              </div>
-             <div class="mfg" id="mf_points_other_div" style="display:${isPtsOther?'block':'none'}; margin-top:8px;"><label>ระบุจำนวนจุด</label><input type="text" id="mf_points_other" value="${ptsOtherVal}"></div>
+             <div class="mgrid" style="margin-top:8px;">
+                <div class="mfg" id="mf_site_type_other_div" style="display:${isSiteOther?'block':'none'};"><label>ระบุหน้างานเพิ่มเติม</label><input type="text" id="mf_site_type_other" value="${siteOtherVal}"></div>
+                <div class="mfg" id="mf_points_other_div" style="display:${isPtsOther?'block':'none'};"><label>ระบุจำนวนจุด</label><input type="text" id="mf_points_other" value="${ptsOtherVal}"></div>
+             </div>
            </div>
-
            <div id="mf_cs_zone" style="display:${!isCI?'block':'none'}">
              <div class="mgrid">
                <div class="mfg"><label>ปัญหา / อาการ</label><select id="mf_sub_cat" onchange="modSubCatChange()">
@@ -886,7 +913,6 @@ function buildFields(d){
              </div>
            </div>
          </div>`;
-       h += probHtml;
        return; 
     }
 
@@ -894,9 +920,24 @@ function buildFields(d){
     if(r.t==='type')inp=`<select id="mf_${r.k}" onchange="modTypeChange()">${['CI1','CI2','CS1','CS2','CW','CH','CR'].map(o=>`<option${v===o?' selected':''}>${o}</option>`).join('')}</select>`;
     else if(r.t==='channel')inp=`<select id="mf_${r.k}">${['หน้าร้าน','Facebook','Line Official','โทรศัพท์'].map(o=>`<option${v===o?' selected':''}>${o}</option>`).join('')}</select>`;
     else if(r.t==='dt')inp=`<input type="datetime-local" id="mf_${r.k}" value="${esc(dtLocalVal(d[r.k]||''))}">`;
-    else if(r.t==='progress')inp=`<select id="mf_${r.k}"><option value="">—</option>${['อยู่ระหว่างการดำเนินการ','รอลูกค้าตอบกลับ','รอนัดหมาย','รอสั่งอะไหล่','สำเร็จ','ไม่สำเร็จ'].map(o=>`<option${v===o.replace(/^[^\s]+ /,'')||v===o?' selected':''}>${o}</option>`).join('')}</select>`;
-    else if(r.t==='action')inp=`<select id="mf_${r.k}"><option value="">—</option>${['แจ้งช่างเข้าพื้นที่','ตรวจสอบระบบ','ปรับตั้งค่าระบบ','ซ่อมแซมอุปกรณ์','เปลี่ยนอุปกรณ์','ติดตั้งอุปกรณ์เพิ่มเติม','แก้ไขสายสัญญาณ','อัพเดทซอฟต์แวร์ / Firmware','รอสั่งอะไหล่','นัดหมายครั้งถัดไป','แจ้งผลให้ลูกค้าทราบ','อื่นๆ'].map(o=>`<option${v===o?' selected':''}>${o}</option>`).join('')}</select>`;
-    else if(r.t==='result')inp=`<select id="mf_${r.k}"><option value="">— ยังไม่ระบุ —</option>${['จบงานเรียบร้อย','จบงาน — รอเก็บเงิน','จบงาน — รอโอนเงิน','จบงาน — เครดิต','นัดซ่อมครั้งถัดไป','รอลูกค้าชำระ','ลูกค้ายกเลิก','ตัดออก'].map(o=>`<option${v===o?' selected':''}>${o}</option>`).join('')}</select>`;
+    else if(r.t==='progress'){
+       const opts = ['อยู่ระหว่างดำเนินการ','รอลูกค้าตอบกลับ','รอนัดหมาย / รออะไหล่','สำเร็จ','ไม่สำเร็จ / ยกเลิก'];
+       let isOther = v && !opts.includes(v);
+       let selVal = isOther ? 'อื่นๆ' : v;
+       inp=`<select id="mf_${r.k}" onchange="modProgressChange()"><option value="">—</option>${opts.map(o=>`<option${selVal===o?' selected':''}>${o}</option>`).join('')}<option${selVal==='อื่นๆ'?' selected':''}>อื่นๆ</option></select></div><div class="mfg" id="mf_${r.k}_other_div" style="display:${isOther?'block':'none'}; margin-top:6px;"><label>ระบุความคืบหน้าเพิ่มเติม</label><input type="text" id="mf_${r.k}_other" value="${isOther?v:''}">`;
+    }
+    else if(r.t==='action'){
+       const opts = ['แจ้งช่างเข้าพื้นที่','ตรวจสอบ / ปรับตั้งค่าระบบ','ซ่อมแซม / เปลี่ยนอุปกรณ์','ติดตั้ง / เดินสายเพิ่มเติม','นัดหมาย / รอสั่งอะไหล่','แจ้งผลให้ลูกค้าทราบ','🌟 ส่งรีวิว 5 ดาว'];
+       let isOther = v && !opts.includes(v);
+       let selVal = isOther ? 'อื่นๆ' : v;
+       inp=`<select id="mf_${r.k}" onchange="modActionChange()"><option value="">—</option>${opts.map(o=>`<option${selVal===o?' selected':''}>${o}</option>`).join('')}<option${selVal==='อื่นๆ'?' selected':''}>อื่นๆ</option></select></div><div class="mfg" id="mf_${r.k}_other_div" style="display:${isOther?'block':'none'}; margin-top:6px;"><label>ระบุการดำเนินการเพิ่มเติม</label><input type="text" id="mf_${r.k}_other" value="${isOther?v:''}">`;
+    }
+    else if(r.t==='result'){
+       const opts = ['จบงานเรียบร้อย','จบงาน — รอชำระเงิน','นัดซ่อมครั้งถัดไป','ยกเลิก / ตัดออก'];
+       let isOther = v && !opts.includes(v);
+       let selVal = isOther ? 'อื่นๆ' : v;
+       inp=`<select id="mf_${r.k}" onchange="modResultChange()"><option value="">— ยังไม่ระบุ —</option>${opts.map(o=>`<option${selVal===o?' selected':''}>${o}</option>`).join('')}<option${selVal==='อื่นๆ'?' selected':''}>อื่นๆ</option></select></div><div class="mfg" id="mf_${r.k}_other_div" style="display:${isOther?'block':'none'}; margin-top:6px;"><label>ระบุสถานะงานเพิ่มเติม</label><input type="text" id="mf_${r.k}_other" value="${isOther?v:''}">`;
+    }
     else if(r.t==='ta')inp=`<textarea id="mf_${r.k}" rows="2">${v}</textarea>`;
     else inp=`<input type="text" id="mf_${r.k}" value="${v}">`;
     h+=`<div class="mfg"${r.t==='ta'?' style="grid-column:1/-1"':''}><label>${r.l}</label>${inp}</div>`;
@@ -908,7 +949,6 @@ function buildFields(d){
   let anyImg=groups.some(([k])=>(imgs[k]||[]).length>0);
   
   h+=`<div class="msec">📷 รูปภาพ</div><div class="img-section">`;
-  
   if(anyImg){
     groups.forEach(([k,lbl])=>{
       const arr=imgs[k]||[];
@@ -920,11 +960,8 @@ function buildFields(d){
       });
       h+='</div>';
     });
-  } else {
-    h+=`<div style="font-size:0.7rem; color:var(--txt-dim); margin-bottom:8px;">ยังไม่มีรูปภาพเดิม</div>`;
-  }
+  } else { h+=`<div style="font-size:0.7rem; color:var(--txt-dim); margin-bottom:8px;">ยังไม่มีรูปภาพเดิม</div>`; }
   
-  // ปุ่มอัปโหลดรูปภาพใหม่ (แสดงให้คนที่ไม่ใช่ Viewer เห็นเท่านั้น)
   if(!window._staffReadOnly) {
     h += `<div style="margin-top:8px;">
             <label style="font-size:0.7rem; font-weight:700; cursor:pointer; display:inline-block; padding:6px 12px; background:var(--g-pale); color:var(--g-md); border-radius:8px; border:1px solid var(--border);">
@@ -947,30 +984,39 @@ async function saveDoc(){
   const btn=document.getElementById('saveBtn');
   btn.innerHTML='<span class="spin"></span>บันทึก...';btn.disabled=true;
   
-  const keys=['name','type','phone','channel','dateStart','dateEnd','progress','action','result','cost','note'];
+  const keys=['name','type','phone','channel','dateStart','dateEnd','cost','note'];
   const u={};
   keys.forEach(k=>{const el=document.getElementById('mf_'+k);if(el)u[k]=el.value;});
 
-  // ── ประกอบร่างสตริงปัญหาจาก Dropdown ──
+  // ── ดึงค่าจาก Dropdown ใหม่ (ถ้าระบุอื่นๆ ให้ดึงจากช่องพิมพ์) ──
+  const pSel = document.getElementById('mf_progress').value;
+  u.progress = pSel === 'อื่นๆ' ? document.getElementById('mf_progress_other').value.trim() : pSel;
+
+  const aSel = document.getElementById('mf_action').value;
+  u.action = aSel === 'อื่นๆ' ? document.getElementById('mf_action_other').value.trim() : aSel;
+
+  const rSel = document.getElementById('mf_result').value;
+  u.result = rSel === 'อื่นๆ' ? document.getElementById('mf_result_other').value.trim() : rSel;
+
+  // ── ประกอบร่างสตริงปัญหา ──
   const typ = document.getElementById('mf_type').value || '';
   const m_cat = document.getElementById('mf_main_cat').value;
   const m_cat_txt = m_cat==='อื่นๆ' ? document.getElementById('mf_main_cat_other').value.trim() : m_cat;
 
   if (typ.startsWith('CI')) {
-     const site = document.getElementById('mf_site_type').value;
+     const siteSel = document.getElementById('mf_site_type').value;
+     const site_txt = siteSel === 'อื่นๆ' ? document.getElementById('mf_site_type_other').value.trim() : siteSel;
      const pt = document.getElementById('mf_points').value;
      const pt_txt = pt==='อื่นๆ' ? document.getElementById('mf_points_other').value.trim() : pt;
-     u.problem = `[CI] ระบบ: ${m_cat_txt} | หน้างาน: ${site} | จุด: ${pt_txt}`;
+     u.problem = `[CI] ระบบ: ${m_cat_txt} | หน้างาน: ${site_txt} | จุด: ${pt_txt}`;
   } else {
      const s_cat = document.getElementById('mf_sub_cat').value;
      const s_cat_txt = s_cat==='อื่นๆ' ? document.getElementById('mf_sub_cat_other').value.trim() : s_cat;
      u.problem = `${m_cat_txt} > ${s_cat_txt}`;
   }
 
-  // ซ่อมบั๊กตัวแปรสถานะที่หายไป
+  // กำหนดสีพื้นหลัง
   const r = u.result || '';
-
-  // รักษา rowColor เดิมไว้ ถ้ามีการปรับสีพื้นหลังค้างไว้
   const existingDoc = docs.find(x=>x._id===editId);
   if(!existingDoc.rowColor && r) {
      u.rowColor = r.includes('จบงาน') ? '#bbf7d0' : r==='ตัดออก'||r==='ลูกค้ายกเลิก' ? '#fca5a5' : '';
@@ -979,7 +1025,6 @@ async function saveDoc(){
   u.updatedAt=firebase.firestore.FieldValue.serverTimestamp();
   u.updatedBy=auth.currentUser?.email||'';
   
-  // ── จัดการอัปโหลดรูปลงใน Modal ──
   const newImgInput = document.getElementById('mf_new_images');
   if (newImgInput && newImgInput.files.length > 0) {
      toast('กำลังประมวลผลรูปภาพ...');
