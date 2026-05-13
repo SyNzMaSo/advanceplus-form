@@ -615,12 +615,14 @@ let rowColors={}, selectedRows=new Set();
 
 function renderHead(){
   const isStaff = window._userRole === 'staff';
+  // 🌟 เพิ่มความฉลาด: เช็คว่าแถวที่แสดงอยู่ตอนนี้ ถูกติ๊กครบหรือยัง
+  const allChecked = filtered.length > 0 && filtered.every(d => selectedRows.has(d._id));
+  
   document.getElementById('thead').innerHTML='<tr>'+
-    '<th style="width:32px;padding:.6rem .4rem;">'+ (isStaff ? '' : '<input type="checkbox" id="checkAll" onclick="toggleAll(this)" style="accent-color:var(--g-md)">') +'</th>'+
+    '<th style="width:32px;padding:.6rem .4rem;">'+ (isStaff ? '' : `<input type="checkbox" id="checkAll" onclick="toggleAll(this)" ${allChecked ? 'checked' : ''} style="accent-color:var(--g-md); cursor:pointer;">`) +'</th>'+
     LBLS.map((l,i)=>`<th onclick="sortBy(${i})">${l}<span class="si">${sc===i?(sa?'▲':'▼'):'⇅'}</span>${isStaff ? '' : '<div class="resizer" onclick="event.stopPropagation()"></div>'}</th>`).join('')+
   '</tr>';
   
-  // โหลดระบบยืดหดคอลัมน์เฉพาะคนที่ไม่ใช่ Staff
   if(!isStaff) {
     setTimeout(initResizers, 50); 
   }
@@ -675,10 +677,17 @@ function renderBody(rows){
 // ── ชุดฟังก์ชันที่ป้องกัน Staff แอบใช้งาน ──
 function toggleAll(el){
   if(window._userRole === 'staff') return; // บล็อก Staff
-  if(el.checked) docs.forEach(d=>selectedRows.add(d._id));
-  else selectedRows.clear();
+  
+  // 🌟 ปรับให้ติ๊กเข้า-ออก เฉพาะข้อมูลที่กำลังแสดงอยู่บนหน้าจอ (กันแอบไปโดนข้อมูลที่ซ่อนอยู่)
+  if(el.checked) {
+    filtered.forEach(d=>selectedRows.add(d._id));
+  } else {
+    filtered.forEach(d=>selectedRows.delete(d._id));
+  }
+  
   updateSelCount(); applyFilter();
 }
+
 function toggleSelect(id, e){
   if(e) e.stopPropagation();
   if(window._userRole === 'staff') return; // บล็อก Staff
@@ -1233,6 +1242,7 @@ async function saveDoc(){
 
 <script>
 // 2. ฟังก์ชันนำเข้าข้อมูลจาก Excel
+// 2. ฟังก์ชันนำเข้าข้อมูลจาก Excel
 async function importExcel(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -1246,7 +1256,6 @@ async function importExcel(event) {
   const reader = new FileReader();
   reader.onload = async (e) => {
     try {
-      // ตัวดักจับ: เช็คว่า Library โหลดสำเร็จและพร้อมใช้งานหรือไม่
       if (typeof XLSX === 'undefined' || typeof XLSX.read !== 'function') {
         toast('⚠️ ระบบอ่าน Excel โหลดไม่สำเร็จ กรุณากด Ctrl + F5 เพื่อรีเฟรชหน้าเว็บ');
         return;
@@ -1255,18 +1264,22 @@ async function importExcel(event) {
       const data = new Uint8Array(e.target.result);
       const workbook = XLSX.read(data, { type: 'array' });
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(firstSheet);
+      const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" }); // กันช่องว่างแล้วพัง
 
-      // --- Mapping หัวข้อจากไฟล์ Monly Report ---
+      // 🌟 พจนานุกรมจับคู่คอลัมน์ (อัปเดตใหม่ ครบ 100%)
       const colMap = {
         'ชื่อ': 'name', 'ชื่อลูกค้า': 'name',
-        'เบอร์โทร': 'phone', 'เบอร์โทรศัพท์': 'phone', 'โทรศัพท์': 'phone',
+        'เบอร์': 'phone', 'เบอร์โทร': 'phone', 'เบอร์โทรศัพท์': 'phone', 'โทรศัพท์': 'phone',
         'ประเภท': 'type', 'Customer Classification': 'type', 'Classification': 'type',
-        'ปัญหา': 'problem', 'รายละเอียดของงาน': 'problem', 'อาการ': 'problem',
-        'วันที่': 'dateStart', 'วันที่เข้างาน': 'dateStart',
-        'ผล': 'progress', 'ความคืบหน้า': 'progress',
-        'สาเหตุ': 'action', 'การดำเนินการ': 'action',
-        'สถานะ': 'result', 'หมายเหตุ': 'note'
+        'ช่องทาง': 'channel',
+        'ปัญหา / รายละเอียดของงาน': 'problem', 'ปัญหา': 'problem', 'รายละเอียดของงาน': 'problem', 'อาการ': 'problem',
+        'เข้างาน': 'dateStart', 'วันที่': 'dateStart', 'วันที่เข้างาน': 'dateStart',
+        'เสร็จงาน': 'dateEnd', 'วันที่เสร็จงาน': 'dateEnd',
+        'ความคืบหน้า': 'progress', 'ผล': 'progress',
+        'การดำเนินการ': 'action', 'สาเหตุ': 'action',
+        'สถานะ': 'result', 
+        'ค่าใช้จ่าย': 'cost', 'ค่าใช้จ่าย (บาท)': 'cost',
+        'หมายเหตุ': 'note'
       };
 
       const batch = db.batch();
@@ -1279,10 +1292,11 @@ async function importExcel(event) {
         };
         
         Object.keys(row).forEach(col => {
+          // ค้นหาคอลัมน์แบบตัดช่องว่างซ้ายขวา และทำให้พจนานุกรมฉลาดขึ้น
           const mapped = colMap[col.trim()];
           if (mapped) {
             let val = row[col];
-            if (mapped === 'dateStart' && typeof val === 'number') {
+            if ((mapped === 'dateStart' || mapped === 'dateEnd') && typeof val === 'number') {
               const d = XLSX.utils.sheet_to_date(val);
               val = d.toISOString().substring(0, 16); 
             }
@@ -1292,7 +1306,17 @@ async function importExcel(event) {
 
         if (doc.name || doc.phone) {
           const r = doc.result || '';
-          doc.rowColor = r.includes('จบงาน') ? '#bbf7d0' : (r === 'ตัดออก' || r === 'ลูกค้ายกเลิก' ? '#fca5a5' : '');
+          const p = doc.progress || '';
+          
+          // ระบบใส่สีอัตโนมัติตอน Import
+          if (r.includes('จบงาน') || p.includes('สำเร็จ')) {
+             doc.rowColor = '#bbf7d0';
+          } else if (r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ')) {
+             doc.rowColor = '#fca5a5';
+          } else {
+             doc.rowColor = '';
+          }
+
           const newDocRef = db.collection('customers').doc();
           batch.set(newDocRef, doc);
           count++;
@@ -1302,7 +1326,7 @@ async function importExcel(event) {
       if (count === 0) {
         toast('⚠️ ไม่พบข้อมูลที่นำเข้าได้ (หัวข้อใน Excel ไม่ตรงกับระบบ)');
       } else {
-        if (confirm(`พบข้อมูล ${count} รายการ ต้องการนำเข้าสู่ระบบเลยใช่ไหม?`)) {
+        if (confirm(`พบข้อมูล ${count} รายการ ต้องการนำเข้าสู่ระบบเลยใช่ไหม?`)) { 
           toast('⏳ กำลังนำเข้าข้อมูล...');
           await batch.commit();
           toast(`✅ นำเข้าเรียบร้อย ${count} รายการ`);
@@ -1317,6 +1341,7 @@ async function importExcel(event) {
   };
   reader.readAsArrayBuffer(file);
 }
+  
 </script>
 
 <input type="file" id="excelInput" accept=".xlsx, .xls, .csv" style="display:none" onchange="importExcel(event)">
