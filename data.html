@@ -223,6 +223,10 @@ th { position: relative; }
 .pop-custom { display:block; text-align:center; background:var(--inp); border:1px dashed var(--border); border-radius:6px; padding:5px 0; font-size:.68rem; cursor:pointer; color:var(--txt-2); transition:all .2s; }
 .pop-custom:hover { border-style:solid; border-color:var(--g-md); color:var(--g-md); }
 
+/* การจัดเรียงสำหรับกรอบกราฟ */
+.chart-grid { grid-template-columns: 2fr 1fr; }
+@media (max-width: 800px) { .chart-grid { grid-template-columns: 1fr; } } 
+
 </style>
 </head>
 <body>
@@ -296,16 +300,36 @@ th { position: relative; }
 
 <div class="dashboard-grid" style="padding: 10px 1.1rem;">
   <div class="stat-card today">
-    <div class="stat-info">
+    <div class="stat-info" style="width: 100%;">
       <div class="stat-label">⭐ สรุปยอดวันนี้</div>
       <div class="stat-value" id="todayCount">0</div>
       <div id="todayBreakdown" class="breakdown-container"></div>
+      <button class="tbtn" onclick="exportPDF()" style="margin-top: 15px; width: 100%; height: 32px; font-size: 0.75rem; background: var(--g-pale); color: var(--g-dk); border-color: var(--g-lt); display: flex; justify-content: center; align-items: center; gap: 6px;">
+        📄 พิมพ์รายงาน PDF
+      </button>
     </div>
   </div>
+
   <div class="stat-card history">
     <div class="stat-info" style="width:100%">
       <div class="stat-label">📊 สถิติรายวันย้อนหลัง</div>
       <div id="dailySummaryList" class="summary-list"></div>
+    </div>
+  </div>
+</div>
+
+
+<div class="dashboard-grid chart-grid" style="padding: 0 1.1rem 10px;">
+  <div class="stat-card" style="display:flex; flex-direction:column;">
+    <div class="stat-label" style="margin-bottom:10px;">📈 เทรนด์รับงาน 7 วันล่าสุด</div>
+    <div style="position: relative; flex:1; min-height: 180px; width: 100%;">
+      <canvas id="trendChart"></canvas>
+    </div>
+  </div>
+  <div class="stat-card" style="display:flex; flex-direction:column;">
+    <div class="stat-label" style="margin-bottom:10px;">📊 สัดส่วนประเภทงาน (ทั้งหมด)</div>
+    <div style="position: relative; flex:1; min-height: 180px; width: 100%;">
+      <canvas id="typeChart"></canvas>
     </div>
   </div>
 </div>
@@ -433,7 +457,7 @@ function toggleTheme(){
 }
 
 // เพิ่ม Tab รีวิว และเปลี่ยนชื่อหัวข้อ ปัญหา
-const TABS=['ทั้งหมด','CI1','CI2','CS1','CS2','CW','CH','CR','✅ จบงาน','❌ ตัดออก','⭐ รีวิว 5 ดาว'];
+const TABS=['ทั้งหมด','CI1','CI2', 'CI3', 'CS1','CS2','CW','CH','CR','✅ จบงาน','❌ ตัดออก','⭐ รีวิว 5 ดาว'];
 const KEYS=['timestamp','name','type','phone','channel','problem','dateStart','dateEnd','progress','action','result','cost','note'];
 const LBLS=['เวลา','ชื่อ','ประเภท','เบอร์','ช่องทาง','ปัญหา / รายละเอียดของงาน','เข้างาน','เสร็จงาน','ความคืบหน้า','การดำเนินการ','สถานะ','ค่าใช้จ่าย','หมายเหตุ'];
 
@@ -493,6 +517,7 @@ function updateCounts(){
 }
 
 // ฟังก์ชันคำนวณยอด Dashboard
+// ฟังก์ชันคำนวณยอด Dashboard และสร้างกราฟสถิติ
 function updateDailyDashboard() {
   const summary = {}; 
   const todayStr = new Date().toLocaleDateString('th-TH');
@@ -521,11 +546,11 @@ function updateDailyDashboard() {
 
   const summaryList = document.getElementById('dailySummaryList');
   if(summaryList) {
-    // เรียงวันที่จากใหม่ไปเก่า และ "ตัดมาแค่ 10 วันล่าสุด" (เปลี่ยนเลข 10 เป็น 7 หรือ 15 ได้ตามต้องการครับ)
-  const sortedDates = Object.keys(summary)
-    .sort((a,b) => new Date(b.split('/').reverse().join('-')) - new Date(a.split('/').reverse().join('-')))
-    .slice(0, 10);
-    summaryList.innerHTML = sortedDates.map(date => {
+    const sortedDates = Object.keys(summary)
+      .sort((a,b) => new Date(b.split('/').reverse().join('-')) - new Date(a.split('/').reverse().join('-')));
+    
+    const displayDates = sortedDates.slice(0, 10);
+    summaryList.innerHTML = displayDates.map(date => {
       const data = summary[date];
       return `
         <div class="summary-item">
@@ -537,6 +562,86 @@ function updateDailyDashboard() {
         </div>
       `;
     }).join('');
+
+    // ── 📊 ส่วนสร้างกราฟ (Chart.js) ──
+    if(typeof Chart === 'undefined') return; 
+    
+    Chart.defaults.font.family = "'Kanit', sans-serif";
+    Chart.defaults.color = "#9ab89a";
+
+    // 1. กราฟแท่ง (Bar Chart) - 7 วันล่าสุด
+    const last7Dates = sortedDates.slice(0, 7).reverse(); // 7 วันเรียงจากเก่าไปใหม่
+    const trendLabels = last7Dates.map(d => d === todayStr ? 'วันนี้' : d.substring(0,5));
+    const trendData = last7Dates.map(d => summary[d].total);
+
+    const ctxTrend = document.getElementById('trendChart');
+    if(ctxTrend) {
+        if(window.trendChartInst) window.trendChartInst.destroy();
+        window.trendChartInst = new Chart(ctxTrend, {
+            type: 'bar',
+            data: {
+                labels: trendLabels,
+                datasets: [{
+                    label: 'จำนวนเคส',
+                    data: trendData,
+                    backgroundColor: '#16a34a',
+                    borderRadius: 6,
+                    barPercentage: 0.6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { padding: 10 } },
+                scales: { 
+                  y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                  x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    // 2. กราฟโดนัท (Doughnut Chart) - สัดส่วนประเภทงานทั้งหมด
+    const typeCount = {};
+    docs.forEach(d => {
+        const t = d.type || 'ไม่ระบุ';
+        typeCount[t] = (typeCount[t] || 0) + 1;
+    });
+    const typeLabels = Object.keys(typeCount);
+    const typeData = Object.values(typeCount);
+    
+    // กำหนดสีให้แต่ละประเภท (ให้สีตรงกับ Tag)
+    const colorsMap = {
+      'CI1': '#3b82f6', 'CI2': '#60a5fa', 'CI3': '#1d4ed8',
+      'CS1': '#f59e0b', 'CS2': '#fbbf24',
+      'CW': '#8b5cf6', 'CR': '#f97316', 'CH': '#ec4899'
+    };
+    const typeColors = typeLabels.map(t => colorsMap[t] || '#10b981');
+
+    const ctxType = document.getElementById('typeChart');
+    if(ctxType) {
+        if(window.typeChartInst) window.typeChartInst.destroy();
+        window.typeChartInst = new Chart(ctxType, {
+            type: 'doughnut',
+            data: {
+                labels: typeLabels,
+                datasets: [{
+                    data: typeData,
+                    backgroundColor: typeColors,
+                    borderWidth: 0,
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '68%',
+                plugins: {
+                    legend: { position: 'right', labels: { boxWidth: 12, usePointStyle: true, padding: 15 } }
+                }
+            }
+        });
+    }
   }
 }
 
@@ -854,7 +959,8 @@ const MOD_SUB_CATS = {
   'กล้อง Analog':      ['กล้องดับ (น้อยกว่า 4 ตัว)','กล้องดับ (มากกว่า 4 ตัว)','กล้องเสีย','กล้องมีเสียงร้อง','กล้องติดๆ ดับๆ','กล้องไม่ออนไลน์','ดูย้อนหลังไม่ได้','ภาพเบลอ','สัญญาณหลุด','สัญญาณรบกวน','อื่นๆ'],
   'เครื่องบันทึก NVR': ['ไฟไม่ขึ้น','เครื่องพัง','HDD Error','Adapter เสีย','สาย SATA มีปัญหา','บันทึกไม่ได้','ภาพไม่แสดง','อื่นๆ'],
   'ระบบ Network':      ['อินเทอร์เน็ตขัดข้อง','สัญญาณ Wi-Fi หลุด','อุปกรณ์ไม่ออนไลน์','Port / Switch เสีย','อื่นๆ'],
-  'อื่นๆ':             ['ไม่ทำงาน','เสียหาย','ขาด / หาย','ต้องการเพิ่มเติม','อื่นๆ'],
+  'เครื่องสแกนนิ้วมือ':  ['สแกนนิ้ว / สแกนใบหน้าไม่ผ่าน', 'เครื่องดับ / เปิดไม่ติด / ไม่มีไฟเข้า', 'ดึงข้อมูลเวลาไม่ได้ / หลุดเครือข่าย LAN', 'กลอนแม่เหล็กประตูไม่ล็อค / ประตูล็อคค้าง', 'ปุ่มกดออก (Exit Switch) ไม่ทำงาน', 'ทาบการ์ด / คีย์การ์ดไม่ทำงาน', 'อื่นๆ'],
+   'อื่นๆ':          ['แจ้งซ่อมทั่วไป', 'สอบถามข้อมูล', 'ขอใบเสนอราคา', 'สั่งซื้ออุปกรณ์เพิ่ม'] 
 };
 
 function modMainCatChange(){
@@ -942,7 +1048,7 @@ function buildFields(d){
           m_cat = m[0].trim(); s_cat = m[1] ? m[1].trim() : '';
        } else { m_cat = pv; }
 
-       let isMainOther = m_cat && !['กล้อง Digital','กล้อง Analog','เครื่องบันทึก NVR','ระบบ Network','อื่นๆ',''].includes(m_cat);
+       let isMainOther = m_cat && !['กล้อง Digital','กล้อง Analog','เครื่องบันทึก NVR','ระบบ Network','เครื่องสแกนนิ้วมือ','อื่นๆ',''].includes(m_cat);
        let mainSelVal = isMainOther ? 'อื่นๆ' : m_cat;
        let mainOtherVal = isMainOther ? m_cat : '';
 
@@ -966,7 +1072,7 @@ function buildFields(d){
            <div class="mgrid" style="margin-bottom:8px">
              <div class="mfg"><label>ระบบ / ประเภทปัญหา</label><select id="mf_main_cat" onchange="modMainCatChange()">
                <option value="">— เลือกระบบ —</option>
-               ${['กล้อง Digital','กล้อง Analog','เครื่องบันทึก NVR','ระบบ Network','อื่นๆ'].map(o=>`<option${mainSelVal===o?' selected':''}>${o}</option>`).join('')}
+               ${['กล้อง Digital','กล้อง Analog','เครื่องบันทึก NVR','ระบบ Network','เครื่องสแกนนิ้วมือ','อื่นๆ'].map(o=>`<option${mainSelVal===o?' selected':''}>${o}</option>`).join('')}
              </select></div>
              <div class="mfg" id="mf_main_cat_other_div" style="display:${isMainOther?'block':'none'}"><label>ระบุชื่อระบบ</label><input type="text" id="mf_main_cat_other" value="${mainOtherVal}"></div>
            </div>
@@ -1001,7 +1107,7 @@ function buildFields(d){
     }
 
     const v=esc(d[r.k]||'');let inp='';
-    if(r.t==='type')inp=`<select id="mf_${r.k}" onchange="modTypeChange()">${['CI1','CI2','CS1','CS2','CW','CH','CR'].map(o=>`<option${v===o?' selected':''}>${o}</option>`).join('')}</select>`;
+    if(r.t==='type')inp=`<select id="mf_${r.k}" onchange="modTypeChange()">${['CI1','CI2','CI3','CS1','CS2','CW','CH','CR'].map(o=>`<option${v===o?' selected':''}>${o}</option>`).join('')}</select>`;
     else if(r.t==='channel')inp=`<select id="mf_${r.k}">${['หน้าร้าน','Facebook','Line Official','โทรศัพท์'].map(o=>`<option${v===o?' selected':''}>${o}</option>`).join('')}</select>`;
     else if(r.t==='dt')inp=`<input type="datetime-local" id="mf_${r.k}" value="${esc(dtLocalVal(d[r.k]||''))}">`;
     else if(r.t==='progress'){
@@ -1239,6 +1345,8 @@ async function saveDoc(){
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <script>
 // 2. ฟังก์ชันนำเข้าข้อมูลจาก Excel
@@ -1341,7 +1449,91 @@ async function importExcel(event) {
   };
   reader.readAsArrayBuffer(file);
 }
-  
+ 
+ // ── ฟังก์ชันสร้างรายงาน PDF แบบสวยงาม ──
+function exportPDF() {
+  const todayStr = new Date().toLocaleDateString('th-TH');
+  const todayDocs = docs.filter(d => {
+    if (!d.timestamp) return false;
+    const date = d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp);
+    return date.toLocaleDateString('th-TH') === todayStr;
+  });
+
+  if (todayDocs.length === 0) {
+    toast('⚠️ วันนี้ยังไม่มีข้อมูลงาน ไม่สามารถสร้างรายงานได้ครับ');
+    return;
+  }
+
+  toast('⏳ กำลังจัดทำไฟล์ PDF...');
+
+  // สรุปยอดแยกประเภท
+  const types = {};
+  todayDocs.forEach(d => { types[d.type] = (types[d.type] || 0) + 1; });
+  const typeSummary = Object.entries(types).map(([t, c]) => `${t}: ${c} เคส`).join(' | ');
+
+  // สร้างเนื้อหา HTML สำหรับ PDF (แบบสวยๆ)
+  const content = `
+    <div style="font-family:'Sarabun',sans-serif; padding:20px; color:#1a2e1a;">
+      <div style="text-align:center; border-bottom:3px solid #16a34a; padding-bottom:10px; margin-bottom:20px;">
+        <h1 style="color:#15803d; margin:0; font-size:24pt;">Advance Plus</h1>
+        <p style="margin:5px 0; font-size:14pt; color:#4b6b4b;">รายงานสรุปผลการดำเนินงานประจำวัน</p>
+        <p style="font-size:11pt; color:#9ab89a;">วันที่: ${todayStr}</p>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-bottom:20px;">
+        <div style="flex:1; background:#f0fdf4; border:1px solid #d1e8d1; border-radius:10px; padding:15px; text-align:center;">
+          <div style="font-size:10pt; color:#4b6b4b;">ยอดรับงานวันนี้</div>
+          <div style="font-size:24pt; font-weight:bold; color:#16a34a;">${todayDocs.length}</div>
+        </div>
+        <div style="flex:2; background:#f8fbf8; border:1px solid #d1e8d1; border-radius:10px; padding:15px;">
+          <div style="font-size:10pt; color:#4b6b4b; margin-bottom:5px;">สัดส่วนประเภทงาน</div>
+          <div style="font-size:11pt; font-weight:bold; color:#15803d;">${typeSummary}</div>
+        </div>
+      </div>
+
+      <table style="width:100%; border-collapse:collapse; font-size:10pt;">
+        <thead>
+          <tr style="background:#166534; color:#fff;">
+            <th style="padding:10px; border:1px solid #d1e8d1;">เวลา</th>
+            <th style="padding:10px; border:1px solid #d1e8d1;">ลูกค้า</th>
+            <th style="padding:10px; border:1px solid #d1e8d1;">ประเภท</th>
+            <th style="padding:10px; border:1px solid #d1e8d1;">ปัญหา / รายละเอียดงาน</th>
+            <th style="padding:10px; border:1px solid #d1e8d1;">สถานะ</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${todayDocs.map(d => `
+            <tr>
+              <td style="padding:8px; border:1px solid #d1e8d1; text-align:center;">${d.timestamp?.toDate ? d.timestamp.toDate().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : ''}</td>
+              <td style="padding:8px; border:1px solid #d1e8d1;"><b>${d.name || '-'}</b></td>
+              <td style="padding:8px; border:1px solid #d1e8d1; text-align:center;">${d.type || '-'}</td>
+              <td style="padding:8px; border:1px solid #d1e8d1;">${d.problem || '-'}</td>
+              <td style="padding:8px; border:1px solid #d1e8d1; text-align:center;">${d.result || d.progress || '-'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+
+      <div style="margin-top:30px; text-align:right; font-size:9pt; color:#9ab89a;">
+        พิมพ์โดย: ${auth.currentUser?.email || 'System'} | เมื่อ: ${new Date().toLocaleString('th-TH')}
+      </div>
+    </div>
+  `;
+
+  // สั่งแปลงเป็น PDF
+  const opt = {
+    margin: 10,
+    filename: `Report_${todayStr.replace(/\//g,'-')}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  html2pdf().set(opt).from(content).save().then(() => {
+    toast('✅ ดาวน์โหลด PDF เรียบร้อยแล้ว');
+  });
+}
+
 </script>
 
 <input type="file" id="excelInput" accept=".xlsx, .xls, .csv" style="display:none" onchange="importExcel(event)">

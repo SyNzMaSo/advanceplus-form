@@ -657,6 +657,7 @@
             <option value="" disabled selected>— เลือกประเภท —</option>
             <option value="CI1">CI1 — ติดตั้งมากกว่า 4</option>
             <option value="CI2">CI2 — ติดตั้งมากกว่า 1</option>
+            <option value="CI3">CI3 Access Control</option>
             <option value="CS1">CS1 — เซอร์วิสข้างนอก</option>
             <option value="CS2">CS2 — เซอร์วิสออนไลน์</option>
             <option value="CR">CR — ลูกค้าปลีก / ลูกค้าส่ง</option>
@@ -714,7 +715,7 @@
           <select id="f_main_cat" onchange="onMainCatChange()">
             <option value="" disabled selected>— เลือกระบบ —</option>
             <option>กล้อง Digital</option><option>กล้อง Analog</option>
-            <option>เครื่องบันทึก NVR</option><option>ระบบ Network</option><option>อื่นๆ</option>
+            <option>เครื่องบันทึก NVR</option><option>ระบบ Network</option><option>เครื่องสแกนนิ้วมือ</option><option>อื่นๆ</option>
           </select>
           <span class="sel-arrow">▾</span>
         </div>
@@ -1180,6 +1181,7 @@ const SUB_CATS = {
   'กล้อง Analog':  ['กล้องดับ (น้อยกว่า 4 ตัว)','กล้องดับ (มากกว่า 4 ตัว)','กล้องเสีย','กล้องมีเสียงร้อง','กล้องติดๆ ดับๆ','กล้องไม่ออนไลน์','ดูย้อนหลังไม่ได้','ภาพเบลอ','สัญญาณหลุด','สัญญาณรบกวน'],
   'เครื่องบันทึก NVR': ['ไฟไม่ขึ้น','เครื่องพัง','HDD Error','Adapter เสีย','สาย SATA มีปัญหา','บันทึกไม่ได้','ภาพไม่แสดง'],
   'ระบบ Network':  ['อินเทอร์เน็ตขัดข้อง','สัญญาณ Wi-Fi หลุด','อุปกรณ์ไม่ออนไลน์','Port / Switch เสีย'],
+  'เครื่องสแกนนิ้วมือ': ['สแกนนิ้ว / สแกนใบหน้าไม่ผ่าน', 'เครื่องดับ / เปิดไม่ติด / ไม่มีไฟเข้า', 'ดึงข้อมูลเวลาไม่ได้ / หลุดเครือข่าย LAN', 'กลอนแม่เหล็กประตูไม่ล็อค / ประตูล็อคค้าง', 'ปุ่มกดออก (Exit Switch) ไม่ทำงาน', 'ทาบการ์ด / คีย์การ์ดไม่ทำงาน'],
   
   // เปลี่ยนหมวดอื่นๆ ให้ดูดีขึ้นตรงนี้ครับ!
   'อื่นๆ':          ['แจ้งซ่อมทั่วไป', 'สอบถามข้อมูล', 'ขอใบเสนอราคา', 'สั่งซื้ออุปกรณ์เพิ่ม'] 
