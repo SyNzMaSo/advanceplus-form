@@ -1273,14 +1273,15 @@ function applyExcelColor(type, color) {
 // เปิดระบบจดจำสีทันทีที่โหลดเสร็จ
 document.addEventListener('DOMContentLoaded', initColorPicker);
 
-// ── ซ่อมการอัปเดตสีอัตโนมัติตอนแก้ไข (แก้บัคสีค้าง) ──
+// ── Fix auto-color update on edit (Fix color stuck bug) ──
 async function saveDoc(){
   const btn=document.getElementById('saveBtn');
   btn.innerHTML='<span class="spin"></span>บันทึก...';btn.disabled=true;
   
   const keys=['name','type','phone','channel','dateStart','dateEnd','cost','note'];
   const u={};
-  keys.forEach(k=>{const el=document.getElementById('mf_'+k);if(el)u[k]=el.value;});
+  // Trim spaces to prevent system from seeing them as different people
+  keys.forEach(k=>{const el=document.getElementById('mf_'+k);if(el)u[k]=el.value.trim();});
 
   const pSel = document.getElementById('mf_progress').value;
   u.progress = pSel === 'อื่นๆ' ? document.getElementById('mf_progress_other').value.trim() : pSel;
@@ -1305,18 +1306,18 @@ async function saveDoc(){
      u.problem = `${m_cat_txt} > ${s_cat_txt}`;
   }
 
- // 🌟 อัปเกรดการเช็คคำให้ครอบคลุมขึ้น (ดักสีแดงก่อน)
+  // Upgrade word checking to be more comprehensive (Intercept red color first)
   const r = u.result || '';
   const p = u.progress || '';
   if (r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก')) {
-     u.rowColor = '#fca5a5'; // สีแดง
+     u.rowColor = '#fca5a5'; // Red
   } else if (r.includes('จบงาน') || p.includes('สำเร็จ')) {
-     u.rowColor = '#bbf7d0'; // สีเขียว
+     u.rowColor = '#bbf7d0'; // Green
   } else {
-     u.rowColor = ''; // ล้างสี
+     u.rowColor = ''; // Clear color
   }
   
-  // 🌟 จุดสำคัญ: ล้างความจำสีเก่าที่ตารางมันจำไว้ทิ้งไป!
+  // Clear old memory color that the table remembered
   if (typeof rowColors !== 'undefined' && rowColors[editId]) {
      delete rowColors[editId];
   }
@@ -1334,9 +1335,39 @@ async function saveDoc(){
   }
   
   try{
-    await db.collection('customers').doc(editId).update(u);
-    closeModal();toast('✅ บันทึกเรียบร้อยแล้ว');
-  }catch(e){toast('⚠️ '+e.message);}
+    // Smart system: Find if there are other records with the same name and phone
+    const duplicateDocs = docs.filter(d => 
+        d._id !== editId && 
+        u.name !== '' && 
+        u.phone !== '' &&
+        (d.name||'').trim() === u.name && 
+        (d.phone||'').trim() === u.phone
+    );
+
+    if (duplicateDocs.length > 0) {
+        const batch = db.batch();
+        // 1. Delete all old duplicate records
+        duplicateDocs.forEach(d => {
+            batch.delete(db.collection('customers').doc(d._id));
+        });
+        
+        // 2. Update the current record and push the timestamp to the top
+        u.timestamp = firebase.firestore.FieldValue.serverTimestamp(); 
+        batch.update(db.collection('customers').doc(editId), u);
+        
+        await batch.commit();
+        closeModal();
+        toast(`✅ อัปเดตและเคลียร์รายการซ้ำ ${duplicateDocs.length} รายการ`);
+    } else {
+        // Normal update (no duplicates)
+        await db.collection('customers').doc(editId).update(u);
+        closeModal();
+        toast('✅ บันทึกเรียบร้อยแล้ว');
+    }
+  }catch(e){
+    toast('⚠️ '+e.message);
+  }
+  
   btn.innerHTML='💾 บันทึก';btn.disabled=false;
 }
 
