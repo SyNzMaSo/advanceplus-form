@@ -1646,25 +1646,52 @@ async function _doSubmit(btnId, sectionLabel) {
     // ── แปลงและบีบอัดรูป ──
     const imgCC = await Promise.all((UPLOAD_FILES['cc']||[]).map(f=>compressImage(f)));
 
-    // ── กำหนดสีแถวตามสถานะ ──
-    const resultVal = v.result || '';
-    const autoColor = resultVal.includes('จบงาน') || resultVal === 'จบงานเรียบร้อย'
-      ? '#bbf7d0'
-      : resultVal === 'ตัดออก' || resultVal === 'ลูกค้ายกเลิก'
-      ? '#fca5a5' : '';
+   // ── กำหนดสีแถวตามสถานะ ──
+    const r = v.result || '';
+    const p = v.progress || '';
+    let autoColor = '';
+    if (r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก')) {
+      autoColor = '#fca5a5';
+    } else if (r.includes('จบงาน') || p.includes('สำเร็จ')) {
+      autoColor = '#bbf7d0';
+    }
 
-    // ── บันทึกลง Firestore เท่านั้น ──
-    await db.collection('customers').add({
-      ...v,
-      timestamp:   firebase.firestore.FieldValue.serverTimestamp(),
-      submittedBy: auth.currentUser?.email || '',
-      images:      { cc: imgCC },
-      rowColor:    autoColor,
-    });
+    // ── 🔍 ค้นหาว่ามีลูกค้าคนนี้ในระบบหรือยัง (ชื่อ + เบอร์ ตรงกัน) ──
+    const existingSnap = await db.collection('customers')
+      .where('name', '==', v.name)
+      .where('phone', '==', v.phone)
+      .get();
+
+    let toastMsg = '📌 บันทึกข้อมูลลงระบบเรียบร้อยแล้ว';
+
+    if (!existingSnap.empty) {
+      // 🔄 มีข้อมูลอยู่แล้ว -> ให้ "เขียนทับ" (Update) แถวเดิม
+      const docId = existingSnap.docs[0].id;
+      const oldData = existingSnap.docs[0].data();
+      
+      await db.collection('customers').doc(docId).update({
+        ...v,
+        timestamp:   firebase.firestore.FieldValue.serverTimestamp(), // อัปเดตเวลาเป็นปัจจุบันให้เด้งมาบนสุด
+        submittedBy: auth.currentUser?.email || '',
+        // ถ้ารอบนี้แนบรูปมาใหม่ให้ใช้รูปใหม่ ถ้าไม่แนบให้คงรูปเก่าไว้
+        images:      { cc: imgCC.length > 0 ? imgCC : (oldData.images?.cc || []) },
+        rowColor:    autoColor,
+      });
+      toastMsg = '🔄 เขียนทับข้อมูลลูกค้าเดิมเรียบร้อยแล้ว';
+    } else {
+      // 🆕 ไม่มีข้อมูล -> สร้างรายการใหม่ตามปกติ
+      await db.collection('customers').add({
+        ...v,
+        timestamp:   firebase.firestore.FieldValue.serverTimestamp(),
+        submittedBy: auth.currentUser?.email || '',
+        images:      { cc: imgCC },
+        rowColor:    autoColor,
+      });
+    }
 
     toast.style.display='block';
     document.getElementById('toastDetail').innerHTML=
-      '<b>'+sectionLabel+'</b> &nbsp;|&nbsp; <b>'+(v.name||v.phone)+'</b><br>📌 บันทึกข้อมูลลงระบบเรียบร้อยแล้ว';
+      '<b>'+sectionLabel+'</b> &nbsp;|&nbsp; <b>'+(v.name||v.phone)+'</b><br>' + toastMsg;
     btn.innerHTML='✓ ส่งแล้ว';
     btn.style.background='linear-gradient(135deg,#0a4a1e,#157535)';
     setTimeout(()=>{

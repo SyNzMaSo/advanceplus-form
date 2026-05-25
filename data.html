@@ -485,34 +485,34 @@ function init(){
 
 // Tabs
 function buildTabs(){
-  document.getElementById('tabsEl').innerHTML=TABS.map(t=>
-    `<div class="tab${t===activeTab?' on':''}" id="t_${t}" onclick="switchTab('${t}')">${t}<span class="tab-n" id="n_${t}">0</span></div>`
+  // ใช้เลข Index (i) ในการสร้าง ID แทนชื่อที่มีอิโมจิ เพื่อกันบราวเซอร์บั๊ก
+  document.getElementById('tabsEl').innerHTML=TABS.map((t, i)=>
+    `<div class="tab${t===activeTab?' on':''}" onclick="switchTab('${t}')">${t}<span class="tab-n" id="cnt_${i}">0</span></div>`
   ).join('');
 }
 
 function switchTab(t){
   activeTab=t;
-  document.querySelectorAll('.tab').forEach(e=>e.classList.remove('on'));
-  document.getElementById('t_'+t)?.classList.add('on');
+  buildTabs(); // บังคับสร้างปุ่มใหม่เพื่ออัปเดตสีแท็บที่ Active ทันที
   document.getElementById('searchEl').value='';
   applyTabFilter();
+  updateCounts(); // เติมตัวเลขกลับเข้าไป
 }
 
 function updateCounts(){
-  TABS.forEach(t=>{
+  TABS.forEach((t, i)=>{
     let n=0;
     if(t==='ทั้งหมด') n=docs.length;
     else if(t==='✅ จบงาน') n=docs.filter(d=>(d.result||'').includes('จบงาน')).length;
-    else if(t==='❌ ตัดออก') n=docs.filter(d=>d.result==='ตัดออก').length;
+    else if(t==='❌ ตัดออก') n=docs.filter(d=>(d.result||'').includes('ตัดออก') || (d.result||'').includes('ยกเลิก') || (d.progress||'').includes('ยกเลิก')).length;
     else if(t==='⭐ รีวิว 5 ดาว') {
-      // ค้นหาคำว่า "รีวิว 5 ดาว" จากทั้งช่องปัญหาและช่องการดำเนินการ
-      n=docs.filter(d=> 
-        (d.problem||'').includes('รีวิว 5 ดาว') || 
-        (d.action||'').includes('รีวิว 5 ดาว')
-      ).length;
+      n=docs.filter(d=> (d.problem||'').includes('รีวิว 5 ดาว') || (d.action||'').includes('รีวิว 5 ดาว')).length;
     }
     else n=docs.filter(d=>(d.type||'').toUpperCase()===t.toUpperCase()).length;
-    const e=document.getElementById('n_'+t); if(e)e.textContent=n;
+    
+    // อัปเดตตัวเลขตาม ID ที่เป็นตัวเลข (cnt_0, cnt_1...)
+    const e=document.getElementById('cnt_'+i); 
+    if(e) e.textContent=n;
   });
 }
 
@@ -648,7 +648,7 @@ function updateDailyDashboard() {
 function applyTabFilter(){
   if (activeTab==='ทั้งหมด') filtered=[...docs];
   else if (activeTab==='✅ จบงาน') filtered=docs.filter(d=>(d.result||'').includes('จบงาน'));
-  else if (activeTab==='❌ ตัดออก') filtered=docs.filter(d=>d.result==='ตัดออก');
+  else if (activeTab==='❌ ตัดออก') filtered=docs.filter(d=>(d.result||'').includes('ตัดออก') || (d.result||'').includes('ยกเลิก') || (d.progress||'').includes('ยกเลิก'));// 🌟 อัปเกรดการเช็คคำให้ครอบคลุมขึ้น
   else if (activeTab==='⭐ รีวิว 5 ดาว') {
     // กรองเอาเฉพาะที่มีคำว่า "รีวิว 5 ดาว"
     filtered=docs.filter(d=> 
@@ -1273,8 +1273,6 @@ function applyExcelColor(type, color) {
 // เปิดระบบจดจำสีทันทีที่โหลดเสร็จ
 document.addEventListener('DOMContentLoaded', initColorPicker);
 
-
-// ── ซ่อมการอัปเดตสีอัตโนมัติตอนแก้ไข ──
 // ── ซ่อมการอัปเดตสีอัตโนมัติตอนแก้ไข (แก้บัคสีค้าง) ──
 async function saveDoc(){
   const btn=document.getElementById('saveBtn');
@@ -1307,13 +1305,13 @@ async function saveDoc(){
      u.problem = `${m_cat_txt} > ${s_cat_txt}`;
   }
 
-  // 🌟 อัปเกรดการเช็คคำให้ครอบคลุมขึ้น
+ // 🌟 อัปเกรดการเช็คคำให้ครอบคลุมขึ้น (ดักสีแดงก่อน)
   const r = u.result || '';
   const p = u.progress || '';
-  if (r.includes('จบงาน') || p.includes('สำเร็จ')) {
-     u.rowColor = '#bbf7d0'; // สีเขียว
-  } else if (r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ')) {
+  if (r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก')) {
      u.rowColor = '#fca5a5'; // สีแดง
+  } else if (r.includes('จบงาน') || p.includes('สำเร็จ')) {
+     u.rowColor = '#bbf7d0'; // สีเขียว
   } else {
      u.rowColor = ''; // ล้างสี
   }
@@ -1416,11 +1414,11 @@ async function importExcel(event) {
           const r = doc.result || '';
           const p = doc.progress || '';
           
-          // ระบบใส่สีอัตโนมัติตอน Import
-          if (r.includes('จบงาน') || p.includes('สำเร็จ')) {
-             doc.rowColor = '#bbf7d0';
-          } else if (r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ')) {
+          // ระบบใส่สีอัตโนมัติตอน Import (ดักสีแดงก่อน)
+          if (r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก')) {
              doc.rowColor = '#fca5a5';
+          } else if (r.includes('จบงาน') || p.includes('สำเร็จ')) {
+             doc.rowColor = '#bbf7d0';
           } else {
              doc.rowColor = '';
           }
