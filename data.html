@@ -1322,11 +1322,11 @@ function exportToExcel(statusFilter = 'all') {
   toast('✅ ดาวน์โหลด Excel สำเร็จ!');
 }
 
-// ── ฟังก์ชัน Export รูปภาพ (อัปเกรดแก้บั๊กกดได้รอบเดียว + ตัวกรองเด็ดขาด) ──
+/// ── Export Image Function (Upgraded with Customer List Table) ──
 function exportStatsAsImage(statusFilter = 'all') {
   if (!docs || docs.length === 0) return toast('⚠️ ไม่มีข้อมูลให้สร้างสถิติครับ');
 
-  // 1. กรองตามแท็บ
+  // 1. Filter by Active Tab
   let currentDocs = docs;
   if (activeTab !== 'ทั้งหมด') {
     if (activeTab === '✅ จบงาน') currentDocs = currentDocs.filter(d => (d.result || '').includes('จบงาน'));
@@ -1338,7 +1338,7 @@ function exportStatsAsImage(statusFilter = 'all') {
     else currentDocs = currentDocs.filter(d => (d.type || '').toUpperCase() === activeTab.toUpperCase());
   }
 
-  // 2. กรองตามสถานะแบบ "เด็ดขาด"
+  // 2. Strict Filter by Selected Status
   if (statusFilter === 'success') {
      currentDocs = currentDocs.filter(d => {
          const r = d.result||'', p = d.progress||'';
@@ -1361,9 +1361,9 @@ function exportStatsAsImage(statusFilter = 'all') {
   }
 
   if (currentDocs.length === 0) return toast('⚠️ ไม่มีข้อมูลในสถานะที่เลือกครับ');
-  toast('⏳ กำลังประมวลผลข้อมูลและวาดกราฟ...');
+  toast('⏳ กำลังประมวลผลข้อมูล วาดกราฟ และโหลดรายชื่อ...');
 
-  // 3. คำนวณยอดรวมของกลุ่มที่กรองมา
+  // 3. Calculate Summary Counts
   let success = 0, fail = 0, pending = 0;
   currentDocs.forEach(d => {
     const r = d.result || '', p = d.progress || '';
@@ -1373,16 +1373,44 @@ function exportStatsAsImage(statusFilter = 'all') {
   });
 
   const sName = statusFilter === 'all' ? 'รวมทุกสถานะ' : (statusFilter === 'success' ? 'เฉพาะเคสที่สำเร็จแล้ว' : (statusFilter === 'fail' ? 'เฉพาะเคสที่ไม่สำเร็จ' : 'เฉพาะเคสที่รอดำเนินการ'));
-
-  // 🌟 สร้าง Canvas ID แบบสุ่ม เพื่อกันบั๊ก Chart.js เอ๋อเวลากดซ้ำ
   const uniqueId = 'exportChart_' + Date.now();
 
-  // 4. สร้างผืนผ้าใบ
+  // 4. Generate HTML for Customer List Table Rows
+  const tableRowsHTML = currentDocs.map((d, index) => {
+    const ts = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleDateString('th-TH') : '-';
+    const r = d.result || '';
+    const p = d.progress || '';
+    let stColor = '#4b5563';
+    let bgRow = '#ffffff';
+    let stText = r || p || '-';
+
+    // Apply color coding for each row based on status
+    if (r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก')) {
+        stColor = '#b91c1c'; bgRow = '#fef2f2';
+    } else if (r.includes('จบงาน') || p.includes('สำเร็จ')) {
+        stColor = '#15803d'; bgRow = '#f0fdf4';
+    } else {
+        stColor = '#b45309'; bgRow = '#fffbeb';
+    }
+
+    return `
+    <tr style="background-color: ${bgRow}; color: ${stColor};">
+        <td style="padding: 12px; border: 1px solid #d1e8d1; text-align: center;">${index + 1}</td>
+        <td style="padding: 12px; border: 1px solid #d1e8d1; text-align: center;">${ts}</td>
+        <td style="padding: 12px; border: 1px solid #d1e8d1; font-weight: bold;">${d.name || '-'}</td>
+        <td style="padding: 12px; border: 1px solid #d1e8d1; text-align: center;">${d.phone || '-'}</td>
+        <td style="padding: 12px; border: 1px solid #d1e8d1;">${d.problem || '-'}</td>
+        <td style="padding: 12px; border: 1px solid #d1e8d1; text-align: center; font-weight: bold;">${stText}</td>
+    </tr>
+    `;
+  }).join('');
+
+  // 5. Create Hidden Canvas Container (Expanded width to 900px for table fit)
   const container = document.createElement('div');
   container.style.position = 'absolute';
   container.style.left = '-9999px';
   container.style.top = '0';
-  container.style.width = '750px';
+  container.style.width = '900px'; 
   container.style.backgroundColor = '#ffffff';
   container.style.padding = '40px';
   container.style.fontFamily = "'Kanit', sans-serif";
@@ -1396,6 +1424,7 @@ function exportStatsAsImage(statusFilter = 'all') {
         <p style="margin: 8px 0 0; font-size: 18px; color: #d97706; font-weight:bold;">ตัวกรอง: ${sName}</p>
         <p style="margin: 8px 0 0; font-size: 16px; color: #666;">จำนวนยอดรวมที่แสดงผล: <b>${currentDocs.length}</b> เคส | พิมพ์เมื่อ: ${new Date().toLocaleString('th-TH')}</p>
     </div>
+    
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; gap: 40px;">
         <div style="flex: 1; position: relative; height: 300px;">
             <canvas id="${uniqueId}"></canvas>
@@ -1417,13 +1446,33 @@ function exportStatsAsImage(statusFilter = 'all') {
             </table>
         </div>
     </div>
-    <div style="text-align: center; font-size: 14px; color: #9ab89a; border-top: 1px dashed #d1e8d1; padding-top: 15px;">
+
+    <div style="margin-top: 40px; border-top: 2px dashed #16a34a; padding-top: 30px;">
+        <h3 style="color: #15803d; margin: 0 0 15px 0; font-size: 22px;">📋 รายชื่อลูกค้า (${sName})</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+            <thead>
+                <tr style="background: #166534; color: #ffffff;">
+                    <th style="padding: 12px; border: 1px solid #d1e8d1; width: 5%;">ลำดับ</th>
+                    <th style="padding: 12px; border: 1px solid #d1e8d1; width: 12%;">วันที่</th>
+                    <th style="padding: 12px; border: 1px solid #d1e8d1; width: 20%;">ชื่อลูกค้า</th>
+                    <th style="padding: 12px; border: 1px solid #d1e8d1; width: 15%;">เบอร์โทร</th>
+                    <th style="padding: 12px; border: 1px solid #d1e8d1; width: 33%;">รายละเอียดหน้างาน</th>
+                    <th style="padding: 12px; border: 1px solid #d1e8d1; width: 15%;">สถานะ</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${tableRowsHTML}
+            </tbody>
+        </table>
+    </div>
+
+    <div style="text-align: center; font-size: 14px; color: #9ab89a; border-top: 1px dashed #d1e8d1; padding-top: 20px; margin-top: 30px;">
         ส่งออกจากระบบ Advance Plus CRM System | ผู้พิมพ์: ${auth.currentUser?.email || 'System'}
     </div>
   `;
   document.body.appendChild(container);
 
-  // วาดกราฟ
+  // 6. Draw Chart
   if (typeof Chart !== 'undefined') {
       const ctx = document.getElementById(uniqueId);
       new Chart(ctx, {
@@ -1443,18 +1492,19 @@ function exportStatsAsImage(statusFilter = 'all') {
       });
   }
 
-  // ถ่ายรูป
+  // 7. Render HTML to PNG Image
   setTimeout(() => {
-    html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
+    // Enable full scroll height capture for long tables
+    html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: container.scrollWidth, windowHeight: container.scrollHeight }).then(canvas => {
       const link = document.createElement('a');
       link.download = `AdvancePlus_Stats_${activeTab.replace(/[/\\?%*:|"<>]/g, '')}_${new Date().getTime()}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
       
       document.body.removeChild(container);
-      toast('✅ บันทึกรูปภาพสำเร็จแล้ว!');
+      toast('✅ บันทึกรูปภาพพร้อมรายชื่อสำเร็จแล้ว!');
     });
-  }, 600);
+  }, 800); // Wait slightly longer for large tables to render perfectly
 }
 
 // ── ระบบจัดการสีแบบ Excel ──
