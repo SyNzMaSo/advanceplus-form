@@ -397,13 +397,65 @@ if(window._userRole==='admin'){
     roleBtn.onclick=()=>location.href='roles-admin.html';
     document.querySelector('.topbar .tbtn')?.insertAdjacentElement('beforebegin',roleBtn);
 
-    // --- 2. ปุ่ม Export Excel (เพิ่มใหม่) ---
-    const exportBtn=document.createElement('button');
-    exportBtn.className='tbtn';
-    exportBtn.innerHTML='📊 Export Excel';
-    exportBtn.style.color='#166534'; exportBtn.style.borderColor='#86efac'; exportBtn.style.background='#f0fdf4';
-    exportBtn.onclick=()=>exportToExcel(); // เรียกใช้ฟังก์ชันส่งออก
-    document.querySelector('.topbar .tbtn')?.insertAdjacentElement('beforebegin',exportBtn);
+    // --- 2. เมนูส่งออกข้อมูล (Export Dropdown: Excel & Image) ---
+    const exportMenu = document.createElement('select');
+    exportMenu.className = 'tbtn';
+    exportMenu.style.color = '#1d4ed8'; 
+    exportMenu.style.borderColor = '#93c5fd'; 
+    exportMenu.style.background = '#dbeafe';
+    exportMenu.style.appearance = 'auto'; 
+    exportMenu.style.cursor = 'pointer'; 
+    exportMenu.style.fontWeight = '700';
+    exportMenu.style.paddingRight = '1.2rem';
+    exportMenu.innerHTML = `
+      <option value="" disabled selected>📥 ส่งออกข้อมูล</option>
+      <option value="excel">📊 เป็นไฟล์ Excel (อักษร)</option>
+      <option value="image">📸 เป็นรูปภาพ (กราฟ)</option>
+    `;
+    exportMenu.onchange = function() {
+      const val = this.value;
+      this.value = ''; 
+      if(val === 'excel' || val === 'image') window.showExportPrompt(val);
+    };
+    document.querySelector('.topbar .tbtn')?.insertAdjacentElement('beforebegin', exportMenu);
+
+    // ── ฟังก์ชันสร้างหน้าต่างเลือกสถานะ (Smart Export Popup) - ปลดล็อกเป็น Global ──
+    window.showExportPrompt = function(exportType) {
+        const overlay = document.createElement('div');
+        overlay.id = 'exportPromptOverlay';
+        overlay.style = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(20,40,20,0.6); z-index:9999; display:flex; justify-content:center; align-items:center; backdrop-filter:blur(4px);';
+        
+        const typeName = exportType === 'excel' ? 'ไฟล์ตาราง Excel 📊' : 'รูปภาพกราฟสถิติ 📸';
+        
+        const box = document.createElement('div');
+        box.style = 'background:#fff; padding:30px; border-radius:16px; width:340px; box-shadow:0 10px 30px rgba(0,0,0,0.3); text-align:center; font-family:"Kanit",sans-serif;';
+        
+        // ผมแอบเติมลูกเล่นเวลามองเมาส์ไปโดนปุ่ม (Hover) ให้ปุ่มมันยุบตัวนิดๆ ดูเป็นปุ่มเกรดพรีเมียมขึ้นครับ
+        box.innerHTML = `
+            <h3 style="margin:0 0 10px; color:#15803d; font-size:1.4rem;">เลือกสถานะที่ต้องการ</h3>
+            <p style="margin:0 0 20px; color:#4b6b4b; font-size:1rem;">หมวดหมู่: <span style="background:#dcfce7; padding:2px 8px; border-radius:8px; font-weight:bold;">${activeTab}</span><br><span style="font-size:0.85rem;">(${typeName})</span></p>
+            
+            <button onclick="window.executeExport('${exportType}', 'all')" style="width:100%; margin-bottom:10px; padding:12px; background:#f0fdf4; border:2px solid #bbf7d0; color:#166534; border-radius:10px; cursor:pointer; font-weight:600; font-size:1rem; transition:transform 0.15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='none'">📑 ดึงมาทั้งหมดทุกสถานะ</button>
+            
+            <button onclick="window.executeExport('${exportType}', 'success')" style="width:100%; margin-bottom:10px; padding:12px; background:#dcfce7; border:2px solid #86efac; color:#15803d; border-radius:10px; cursor:pointer; font-weight:600; font-size:1rem; transition:transform 0.15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='none'">✅ เอาเฉพาะ "สำเร็จ / จบงาน"</button>
+            
+            <button onclick="window.executeExport('${exportType}', 'fail')" style="width:100%; margin-bottom:10px; padding:12px; background:#fee2e2; border:2px solid #fca5a5; color:#b91c1c; border-radius:10px; cursor:pointer; font-weight:600; font-size:1rem; transition:transform 0.15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='none'">❌ เอาเฉพาะ "ไม่สำเร็จ / ยกเลิก"</button>
+            
+            <button onclick="window.executeExport('${exportType}', 'pending')" style="width:100%; margin-bottom:20px; padding:12px; background:#fef3c7; border:2px solid #fcd34d; color:#b45309; border-radius:10px; cursor:pointer; font-weight:600; font-size:1rem; transition:transform 0.15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='none'">⏳ เอาเฉพาะ "รอดำเนินการ"</button>
+            
+            <div style="border-top:1px dashed #d1e8d1; padding-top:15px;">
+                <button onclick="document.body.removeChild(document.getElementById('exportPromptOverlay'))" style="padding:8px 25px; background:#f3f4f6; border:none; color:#4b5563; border-radius:8px; cursor:pointer; font-weight:600;">ยกเลิก</button>
+            </div>
+        `;
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+    };
+
+    window.executeExport = function(type, status) {
+        document.body.removeChild(document.getElementById('exportPromptOverlay'));
+        if(type === 'excel') exportToExcel(status);
+        else if(type === 'image') exportStatsAsImage(status);
+    };
 
     // --- 3. ปุ่ม Import Excel ---
     const importBtn=document.createElement('button');
@@ -504,13 +556,13 @@ function updateCounts(){
     let n=0;
     if(t==='ทั้งหมด') n=docs.length;
     else if(t==='✅ จบงาน') n=docs.filter(d=>(d.result||'').includes('จบงาน')).length;
-    else if(t==='❌ ตัดออก') n=docs.filter(d=>(d.result||'').includes('ตัดออก') || (d.result||'').includes('ยกเลิก') || (d.progress||'').includes('ยกเลิก')).length;
-    else if(t==='⭐ รีวิว 5 ดาว') {
-      n=docs.filter(d=> (d.problem||'').includes('รีวิว 5 ดาว') || (d.action||'').includes('รีวิว 5 ดาว')).length;
-    }
+    else if(t==='❌ ตัดออก') n=docs.filter(d=>{
+        const r=d.result||'', p=d.progress||'';
+        return r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก');
+    }).length;
+    else if(t==='⭐ รีวิว 5 ดาว') n=docs.filter(d=> (d.problem||'').includes('รีวิว 5 ดาว') || (d.action||'').includes('รีวิว 5 ดาว')).length;
     else n=docs.filter(d=>(d.type||'').toUpperCase()===t.toUpperCase()).length;
     
-    // อัปเดตตัวเลขตาม ID ที่เป็นตัวเลข (cnt_0, cnt_1...)
     const e=document.getElementById('cnt_'+i); 
     if(e) e.textContent=n;
   });
@@ -648,13 +700,12 @@ function updateDailyDashboard() {
 function applyTabFilter(){
   if (activeTab==='ทั้งหมด') filtered=[...docs];
   else if (activeTab==='✅ จบงาน') filtered=docs.filter(d=>(d.result||'').includes('จบงาน'));
-  else if (activeTab==='❌ ตัดออก') filtered=docs.filter(d=>(d.result||'').includes('ตัดออก') || (d.result||'').includes('ยกเลิก') || (d.progress||'').includes('ยกเลิก'));// 🌟 อัปเกรดการเช็คคำให้ครอบคลุมขึ้น
+  else if (activeTab==='❌ ตัดออก') filtered=docs.filter(d=>{
+      const r=d.result||'', p=d.progress||'';
+      return r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก');
+  });
   else if (activeTab==='⭐ รีวิว 5 ดาว') {
-    // กรองเอาเฉพาะที่มีคำว่า "รีวิว 5 ดาว"
-    filtered=docs.filter(d=> 
-      (d.problem||'').includes('รีวิว 5 ดาว') || 
-      (d.action||'').includes('รีวิว 5 ดาว')
-    );
+    filtered=docs.filter(d=> (d.problem||'').includes('รีวิว 5 ดาว') || (d.action||'').includes('รีวิว 5 ดาว'));
   }
   else filtered=docs.filter(d=>(d.type||'').toUpperCase()===activeTab.toUpperCase());
   applyFilter();
@@ -741,27 +792,35 @@ function renderBody(rows){
 
   tb.innerHTML=rows.map(d=>{
     const ts=d.timestamp?.toDate?fmtDate(d.timestamp.toDate()):(d.timestamp||'—');
-    const color=d.rowColor||rowColors[d._id]||'';
+    
+    // 🌟 Smart Auto-Color Override (แก้บั๊กสีเขียวค้างจากฐานข้อมูลเก่า)
+    const rTxt = d.result || '';
+    const pTxt = d.progress || '';
+    let finalColor = d.rowColor || rowColors[d._id] || '';
+    
+    // บังคับเช็คแดงก่อนเขียวเสมอ!
+    if (rTxt.includes('ตัดออก') || rTxt.includes('ยกเลิก') || pTxt.includes('ไม่สำเร็จ') || pTxt.includes('ยกเลิก')) {
+        finalColor = '#fca5a5';
+    } else if (rTxt.includes('จบงาน') || pTxt.includes('สำเร็จ')) {
+        finalColor = '#bbf7d0';
+    }
+
     const tColor=d.textColor||'';
     const fw=d.fontWeight||'normal';
-    if(color)rowColors[d._id]=color;
+    if(finalColor)rowColors[d._id]=finalColor;
     
-    // โหลดรูปแบบ Excel (สีพื้น, สีอักษร, ตัวหนา)
     let styleStr='';
-    if(color) styleStr+=`background:${color} !important;`;
+    if(finalColor) styleStr+=`background:${finalColor} !important;`;
     if(tColor) styleStr+=`color:${tColor} !important;`;
     if(fw!=='normal') styleStr+=`font-weight:${fw} !important;`;
     const bg = styleStr ? `style="${styleStr}"` : '';
     const checked=selectedRows.has(d._id);
     
-    // ถ้าเป็น Staff ไม่ต้องสร้าง Checkbox
     const chkHtml = isStaff ? '' : `<input type="checkbox" ${checked?'checked':''} style="accent-color:var(--g-md);cursor:pointer;" onclick="toggleSelect('${d._id}',event)">`;
     const tdClick = isStaff ? '' : `onclick="toggleSelect('${d._id}',event)"`;
 
     return `<tr ${bg} id="row_${d._id}">
-      <td style="width:32px;padding:.4rem;" ${tdClick}>
-        ${chkHtml}
-      </td>
+      <td style="width:32px;padding:.4rem;" ${tdClick}>${chkHtml}</td>
       <td onclick="openModal('${d._id}')">${esc(ts)}</td>
       <td onclick="openModal('${d._id}')"><b>${esc(d.name||'')}</b></td>
       <td onclick="openModal('${d._id}')">${typeTag(d.type||'')}</td>
@@ -1206,34 +1265,196 @@ function setMsg(m){document.getElementById('tbody').innerHTML=`<tr><td colspan="
 let _tt;
 function toast(m){const e=document.getElementById('toastEl');e.textContent=m;e.classList.add('on');clearTimeout(_tt);_tt=setTimeout(()=>e.classList.remove('on'),3000);}
 
-// ฟังก์ชันส่งออกข้อมูลเป็นไฟล์ Excel
-function exportToExcel() {
-  if (window._userRole !== 'admin') { toast('⛔ เฉพาะ Admin เท่านั้นที่ส่งออกข้อมูลได้'); return; }
+// ── ฟังก์ชัน Export Excel (อัปเกรดระบบกรองสถานะ 100% ขั้นเด็ดขาด) ──
+function exportToExcel(statusFilter = 'all') {
+  if (!docs || docs.length === 0) return toast('⚠️ ไม่มีข้อมูลครับ');
   
-  toast('⏳ กำลังเตรียมไฟล์...');
-  
-  // เตรียมข้อมูล: ดึงข้อมูลจากตารางที่แสดงผลอยู่ (ตาม Tab หรือคำค้นหาที่คัดกรองไว้)
-  const dataToExport = filtered.map(d => {
-    const row = {};
-    LBLS.forEach((lbl, i) => {
-      let val = d[KEYS[i]];
-      // แปลงเวลา Firebase ให้เป็นข้อความปกติ
-      if (KEYS[i] === 'timestamp' && val?.toDate) val = fmtDate(val.toDate());
-      row[lbl] = val || '';
+  // 1. กรองตามแท็บ
+  let currentDocs = docs;
+  if (activeTab !== 'ทั้งหมด') {
+    if (activeTab === '✅ จบงาน') currentDocs = currentDocs.filter(d => (d.result || '').includes('จบงาน'));
+    else if (activeTab === '❌ ตัดออก') currentDocs = currentDocs.filter(d => {
+        const r=d.result||'', p=d.progress||'';
+        return r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก');
     });
-    return row;
+    else if (activeTab === '⭐ รีวิว 5 ดาว') currentDocs = currentDocs.filter(d => (d.problem || '').includes('รีวิว 5 ดาว') || (d.action || '').includes('รีวิว 5 ดาว'));
+    else currentDocs = currentDocs.filter(d => (d.type || '').toUpperCase() === activeTab.toUpperCase());
+  }
+  
+  // 2. กรองตามสถานะแบบ "เด็ดขาด" (กันคำว่า "ไม่สำเร็จ" ทะลุเข้า "สำเร็จ")
+  if (statusFilter === 'success') {
+     currentDocs = currentDocs.filter(d => {
+         const r = d.result||'', p = d.progress||'';
+         const isFail = r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก');
+         const isSuccess = r.includes('จบงาน') || p.includes('สำเร็จ');
+         return !isFail && isSuccess; // ต้องสำเร็จจริง และห้ามมีคำว่าไม่สำเร็จ
+     });
+  } else if (statusFilter === 'fail') {
+     currentDocs = currentDocs.filter(d => {
+         const r = d.result||'', p = d.progress||'';
+         return r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก');
+     });
+  } else if (statusFilter === 'pending') {
+     currentDocs = currentDocs.filter(d => {
+         const r = d.result||'', p = d.progress||'';
+         const isFail = r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก');
+         const isSuccess = r.includes('จบงาน') || p.includes('สำเร็จ');
+         return !isFail && !isSuccess;
+     });
+  }
+
+  if (currentDocs.length === 0) return toast('⚠️ ไม่มีข้อมูลในสถานะที่เลือกครับ');
+
+  // 3. สร้างไฟล์ CSV
+  let csv = '\uFEFF';
+  csv += "วันที่แจ้ง,ชื่อลูกค้า,เบอร์โทร,ประเภท,รายละเอียดหน้างาน,ความคืบหน้า,ผลลัพธ์,หมายเหตุ\n";
+  currentDocs.forEach(d => {
+    const dateStr = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleString('th-TH') : '';
+    csv += `"${dateStr}","${d.name||''}","${d.phone||''}","${d.type||''}","${(d.problem||'').replace(/"/g,'""')}","${(d.progress||'').replace(/"/g,'""')}","${(d.result||'').replace(/"/g,'""')}","${(d.note||'').replace(/"/g,'""')}"\n`;
+  });
+  
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  const sName = statusFilter === 'all' ? 'ทั้งหมด' : (statusFilter === 'success' ? 'สำเร็จ' : (statusFilter === 'fail' ? 'ไม่สำเร็จ' : 'รอดำเนินการ'));
+  link.download = `AdvancePlus_Excel_${activeTab}_${sName}.csv`;
+  link.click();
+  toast('✅ ดาวน์โหลด Excel สำเร็จ!');
+}
+
+// ── ฟังก์ชัน Export รูปภาพ (อัปเกรดแก้บั๊กกดได้รอบเดียว + ตัวกรองเด็ดขาด) ──
+function exportStatsAsImage(statusFilter = 'all') {
+  if (!docs || docs.length === 0) return toast('⚠️ ไม่มีข้อมูลให้สร้างสถิติครับ');
+
+  // 1. กรองตามแท็บ
+  let currentDocs = docs;
+  if (activeTab !== 'ทั้งหมด') {
+    if (activeTab === '✅ จบงาน') currentDocs = currentDocs.filter(d => (d.result || '').includes('จบงาน'));
+    else if (activeTab === '❌ ตัดออก') currentDocs = currentDocs.filter(d => {
+        const r=d.result||'', p=d.progress||'';
+        return r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก');
+    });
+    else if (activeTab === '⭐ รีวิว 5 ดาว') currentDocs = currentDocs.filter(d => (d.problem || '').includes('รีวิว 5 ดาว') || (d.action || '').includes('รีวิว 5 ดาว'));
+    else currentDocs = currentDocs.filter(d => (d.type || '').toUpperCase() === activeTab.toUpperCase());
+  }
+
+  // 2. กรองตามสถานะแบบ "เด็ดขาด"
+  if (statusFilter === 'success') {
+     currentDocs = currentDocs.filter(d => {
+         const r = d.result||'', p = d.progress||'';
+         const isFail = r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก');
+         const isSuccess = r.includes('จบงาน') || p.includes('สำเร็จ');
+         return !isFail && isSuccess; 
+     });
+  } else if (statusFilter === 'fail') {
+     currentDocs = currentDocs.filter(d => {
+         const r = d.result||'', p = d.progress||'';
+         return r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก');
+     });
+  } else if (statusFilter === 'pending') {
+     currentDocs = currentDocs.filter(d => {
+         const r = d.result||'', p = d.progress||'';
+         const isFail = r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก');
+         const isSuccess = r.includes('จบงาน') || p.includes('สำเร็จ');
+         return !isFail && !isSuccess;
+     });
+  }
+
+  if (currentDocs.length === 0) return toast('⚠️ ไม่มีข้อมูลในสถานะที่เลือกครับ');
+  toast('⏳ กำลังประมวลผลข้อมูลและวาดกราฟ...');
+
+  // 3. คำนวณยอดรวมของกลุ่มที่กรองมา
+  let success = 0, fail = 0, pending = 0;
+  currentDocs.forEach(d => {
+    const r = d.result || '', p = d.progress || '';
+    if (r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก')) fail++;
+    else if (r.includes('จบงาน') || p.includes('สำเร็จ')) success++;
+    else pending++;
   });
 
-  if (dataToExport.length === 0) { toast('⚠️ ไม่มีข้อมูลให้ส่งออก'); return; }
+  const sName = statusFilter === 'all' ? 'รวมทุกสถานะ' : (statusFilter === 'success' ? 'เฉพาะเคสที่สำเร็จแล้ว' : (statusFilter === 'fail' ? 'เฉพาะเคสที่ไม่สำเร็จ' : 'เฉพาะเคสที่รอดำเนินการ'));
 
-  const ws = XLSX.utils.json_to_sheet(dataToExport);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "CustomerData");
-  
-  // ชื่อไฟล์ตามวันที่ปัจจุบัน
-  const fileName = `AdvancePlus_Report_${new Date().toISOString().slice(0,10)}.xlsx`;
-  XLSX.writeFile(wb, fileName);
-  toast('📂 ส่งออกไฟล์เรียบร้อย!');
+  // 🌟 สร้าง Canvas ID แบบสุ่ม เพื่อกันบั๊ก Chart.js เอ๋อเวลากดซ้ำ
+  const uniqueId = 'exportChart_' + Date.now();
+
+  // 4. สร้างผืนผ้าใบ
+  const container = document.createElement('div');
+  container.style.position = 'absolute';
+  container.style.left = '-9999px';
+  container.style.top = '0';
+  container.style.width = '750px';
+  container.style.backgroundColor = '#ffffff';
+  container.style.padding = '40px';
+  container.style.fontFamily = "'Kanit', sans-serif";
+  container.style.color = '#1a2e1a';
+  container.style.boxSizing = 'border-box';
+
+  container.innerHTML = `
+    <div style="text-align: center; border-bottom: 4px solid #16a34a; padding-bottom: 20px; margin-bottom: 30px;">
+        <h2 style="margin: 0; color: #15803d; font-size: 34px; font-weight: 700;">📊 สรุปสถิติผลการดำเนินงาน</h2>
+        <p style="margin: 10px 0 0; color: #4b6b4b; font-size: 20px;">หมวดหมู่ข้อมูล: <span style="background:#dcfce7; padding:4px 16px; border-radius:20px; color:#15803d; font-weight:bold;">${activeTab}</span></p>
+        <p style="margin: 8px 0 0; font-size: 18px; color: #d97706; font-weight:bold;">ตัวกรอง: ${sName}</p>
+        <p style="margin: 8px 0 0; font-size: 16px; color: #666;">จำนวนยอดรวมที่แสดงผล: <b>${currentDocs.length}</b> เคส | พิมพ์เมื่อ: ${new Date().toLocaleString('th-TH')}</p>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; gap: 40px;">
+        <div style="flex: 1; position: relative; height: 300px;">
+            <canvas id="${uniqueId}"></canvas>
+        </div>
+        <div style="flex: 1;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-radius: 12px; overflow: hidden;">
+                <tr style="background: #f0fdf4; border-bottom: 1px solid #bbf7d0;">
+                    <td style="padding: 18px; font-weight: bold; color: #166534;">✅ สำเร็จ (จบงาน)</td>
+                    <td style="padding: 18px; text-align: right; font-weight: bold; color: #166534; font-size: 26px;">${success}</td>
+                </tr>
+                <tr style="background: #fef2f2; border-bottom: 1px solid #fecaca;">
+                    <td style="padding: 18px; font-weight: bold; color: #991b1b;">❌ ไม่สำเร็จ (ยกเลิก)</td>
+                    <td style="padding: 18px; text-align: right; font-weight: bold; color: #991b1b; font-size: 26px;">${fail}</td>
+                </tr>
+                <tr style="background: #fffbeb;">
+                    <td style="padding: 18px; font-weight: bold; color: #92400e;">⏳ รอดำเนินการ</td>
+                    <td style="padding: 18px; text-align: right; font-weight: bold; color: #92400e; font-size: 26px;">${pending}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div style="text-align: center; font-size: 14px; color: #9ab89a; border-top: 1px dashed #d1e8d1; padding-top: 15px;">
+        ส่งออกจากระบบ Advance Plus CRM System | ผู้พิมพ์: ${auth.currentUser?.email || 'System'}
+    </div>
+  `;
+  document.body.appendChild(container);
+
+  // วาดกราฟ
+  if (typeof Chart !== 'undefined') {
+      const ctx = document.getElementById(uniqueId);
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['สำเร็จ', 'ไม่สำเร็จ', 'รอดำเนินการ'],
+          datasets: [{
+            data: [success, fail, pending],
+            backgroundColor: ['#22c55e', '#ef4444', '#f59e0b'],
+            borderWidth: 2, borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '55%', animation: false,
+          plugins: { legend: { position: 'bottom', labels: { font: { family: "'Kanit', sans-serif", size: 16 }, padding: 20 } } }
+        }
+      });
+  }
+
+  // ถ่ายรูป
+  setTimeout(() => {
+    html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
+      const link = document.createElement('a');
+      link.download = `AdvancePlus_Stats_${activeTab.replace(/[/\\?%*:|"<>]/g, '')}_${new Date().getTime()}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      
+      document.body.removeChild(container);
+      toast('✅ บันทึกรูปภาพสำเร็จแล้ว!');
+    });
+  }, 600);
 }
 
 // ── ระบบจัดการสีแบบ Excel ──
@@ -1376,6 +1597,7 @@ async function saveDoc(){
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script>
 // 2. ฟังก์ชันนำเข้าข้อมูลจาก Excel
@@ -1562,6 +1784,7 @@ function exportPDF() {
     toast('✅ ดาวน์โหลด PDF เรียบร้อยแล้ว');
   });
 }
+
 
 </script>
 
