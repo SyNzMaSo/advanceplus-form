@@ -103,7 +103,7 @@ body{font-family:'Kanit',sans-serif;background:var(--bg);min-height:100vh;color:
 .twrap-inner{padding:0 1.1rem 6rem;min-width:720px;}
 table{width:100%;border-collapse:collapse;font-size:.75rem;}
 thead tr{background:var(--head-bg);position:sticky;top:0;z-index:10;}
-thead th{padding:.6rem .75rem;text-align:left;color:rgba(255,255,255,.9);font-weight:600;font-size:.68rem;white-space:nowrap;border-right:1px solid rgba(255,255,255,.08);cursor:pointer;user-select:none;letter-spacing:.02em;}
+thead th{padding:.6rem .75rem;text-align:left;color:rgba(255,255,255,.9);font-weight:600;font-size:.68rem;white-space:nowrap;border-right:1px solid rgba(255,255,255,.08);cursor:pointer;user-select:none;letter-spacing:.02em;position:relative;overflow:hidden;text-overflow:ellipsis;}
 thead th:last-child{border-right:none;}
 thead th:hover{background:rgba(255,255,255,.08);}
 .si{margin-left:.2rem;opacity:.5;font-size:.58rem;}
@@ -335,9 +335,25 @@ th { position: relative; }
   </div>
 </div>
 
-<div style="padding: 0 1.1rem;">
-  <div style="overflow-x: auto; padding-bottom: 6rem;">
-    <table style="min-width: 720px; width: 100%;">
+<style>
+.smart-table-wrap {
+  overflow: auto;
+  max-height: 60vh; /* ล็อกความสูงตารางไว้ที่ 60% ของจอ */
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  box-shadow: var(--shadow);
+}
+/* แต่งแถบเลื่อน (Scrollbar) ให้สวยและจับลากง่าย */
+.smart-table-wrap::-webkit-scrollbar { width: 8px; height: 12px; }
+.smart-table-wrap::-webkit-scrollbar-track { background: var(--inp); border-radius: 8px; }
+.smart-table-wrap::-webkit-scrollbar-thumb { background: var(--g-md); border-radius: 8px; }
+.smart-table-wrap::-webkit-scrollbar-thumb:hover { background: var(--g-dk); }
+</style>
+
+<div style="padding: 0 1.1rem; margin-bottom: 2rem;">
+  <div class="smart-table-wrap">
+    <table style="width: max-content; min-width: 100%;">
       <thead id="thead"></thead>
       <tbody id="tbody"><tr><td colspan="15" class="no-data">⏳ กำลังโหลด...</td></tr></tbody>
     </table>
@@ -547,25 +563,35 @@ function toggleTheme(){
 
 // เพิ่ม Tab รีวิว และเปลี่ยนชื่อหัวข้อ ปัญหา
 const TABS=['ทั้งหมด','CI1','CI2', 'CI3', 'CS1','CS2','CW','CH','CR','✅ จบงาน','❌ ตัดออก','⭐ รีวิว 5 ดาว'];
-const KEYS=['timestamp','name','type','phone','channel','problem','dateStart','dateEnd','progress','action','result','cost','note'];
-const LBLS=['เวลา','ชื่อ','ประเภท','เบอร์','ช่องทาง','ปัญหา / รายละเอียดของงาน','เข้างาน','เสร็จงาน','ความคืบหน้า','การดำเนินการ','สถานะ','ค่าใช้จ่าย','หมายเหตุ'];
+const KEYS=['timestamp','name','type','phone','channel','problem','dateStart','dateEnd','progress','action','result','cost','submittedBy','note'];
+const LBLS=['เวลา','ชื่อ','ประเภท','เบอร์','ช่องทาง','ปัญหา / รายละเอียดของงาน','เข้างาน','เสร็จงาน','ความคืบหน้า','การดำเนินการ','สถานะ','ค่าใช้จ่าย','ผู้บันทึก','หมายเหตุ'];
 
 // State
 let docs=[],activeTab='ทั้งหมด',filtered=[],editId=null,sc=0,sa=false,unsub=null;
 
 function init(){
   buildTabs();
+  
+  // 🌟 ติดตั้งระบบลูกกลิ้งเมาส์ให้กล่องสถิติ (ทำแค่ครั้งเดียวตอนโหลดเว็บ ทำงาน 100%)
+  const sl = document.getElementById('dailySummaryList');
+  if(sl && !sl.dataset.wheelBound) {
+      sl.addEventListener('wheel', function(e) {
+          if (e.deltaY !== 0) {
+              e.preventDefault(); // บล็อกไม่ให้จอเลื่อนลง
+              this.scrollLeft += e.deltaY; // เลื่อนซ้ายขวาแทน ลื่นๆ
+          }
+      }, { passive: false });
+      sl.dataset.wheelBound = 'true';
+  }
+
   if(unsub)unsub();
   unsub=db.collection('customers').onSnapshot(snap=>{
     docs=snap.docs.map(d=>({_id:d.id,...d.data()}));
-    // sort client-side by timestamp desc
     docs.sort((a,b)=>{
       const at=a.timestamp?.toDate?a.timestamp.toDate().getTime():0;
       const bt=b.timestamp?.toDate?b.timestamp.toDate().getTime():0;
       return bt-at;
     });
-    
-    // เมื่อดึงข้อมูลเสร็จ ให้สั่งอัปเดตตัวเลขและคัดกรอง Tab
     updateCounts();
     updateDailyDashboard();
     applyTabFilter();
@@ -650,17 +676,6 @@ function updateDailyDashboard() {
         </div>
       `;
     }).join('');
-
-    // 🌟 ระบบเลื่อนเมาส์ (Mouse Wheel) ซ้าย-ขวาฉบับปลดล็อกบราวเซอร์
-    if (!summaryList.dataset.wheelBound) {
-        summaryList.addEventListener('wheel', function(e) {
-            if (e.deltaY !== 0) {
-                e.preventDefault(); // ตอนนี้คำสั่งล็อกหน้าเว็บจะทำงานได้แล้วครับ
-                this.scrollLeft += (e.deltaY > 0 ? 120 : -120); // หมุนปุ๊บ เลื่อนปั๊บ ลื่นๆ เลย
-            }
-        }, { passive: false }); // 👈 หัวใจสำคัญอยู่ตรงนี้ครับ! ปลดล็อก Passive Listener
-        summaryList.dataset.wheelBound = "true";
-    }
 
     // ── 📊 ส่วนสร้างกราฟ (Chart.js) ──
     if(typeof Chart === 'undefined') return; 
@@ -994,24 +1009,39 @@ async function deleteAll(){
   toast('🗑 ลบข้อมูลทั้งหมดเรียบร้อยแล้ว');
 }
 
+// อัปเกรดระบบลากย่อ/ขยายตาราง (ให้หดได้เล็กลง และลากสมูทขึ้น)
+// อัปเกรดระบบลากย่อ/ขยายตาราง (ให้หดได้เล็กลงแบบดั่งใจ 100%)
 function initResizers() {
   const ths = document.querySelectorAll('#thead th');
   ths.forEach(th => {
     const resizer = th.querySelector('.resizer');
     if(!resizer) return;
     let startX, startWidth;
+    
     resizer.addEventListener('mousedown', function(e) {
       startX = e.pageX;
       startWidth = th.offsetWidth;
       resizer.classList.add('resizing');
+      
+      // 🌟 พลังเวทย์: ล็อก Layout ตารางให้เป็น fixed เพื่อบังคับให้ยอมหดตัวตามเมาส์
+      const table = th.closest('table');
+      if(table.style.tableLayout !== 'fixed') {
+         const allThs = table.querySelectorAll('th');
+         allThs.forEach(t => { t.style.width = t.offsetWidth + 'px'; });
+         table.style.tableLayout = 'fixed';
+      }
+
       document.addEventListener('mousemove', mouseMoveHandler);
       document.addEventListener('mouseup', mouseUpHandler);
       e.stopPropagation(); e.preventDefault();
     });
+    
     function mouseMoveHandler(e) {
-      const newW = (startWidth + e.pageX - startX) + 'px';
-      th.style.width = newW; th.style.minWidth = newW; th.style.maxWidth = newW;
+      let newW = (startWidth + e.pageX - startX);
+      if (newW < 40) newW = 40; // ล็อกไว้ไม่ให้หดจนหายไป
+      th.style.width = newW + 'px'; 
     }
+    
     function mouseUpHandler() {
       resizer.classList.remove('resizing');
       document.removeEventListener('mousemove', mouseMoveHandler);
@@ -1233,7 +1263,7 @@ function buildFields(d){
        inp=`<select id="mf_${r.k}" onchange="modProgressChange()"><option value="">—</option>${opts.map(o=>`<option${selVal===o?' selected':''}>${o}</option>`).join('')}<option${selVal==='อื่นๆ'?' selected':''}>อื่นๆ</option></select></div><div class="mfg" id="mf_${r.k}_other_div" style="display:${isOther?'block':'none'}; margin-top:6px;"><label>ระบุความคืบหน้าเพิ่มเติม</label><input type="text" id="mf_${r.k}_other" value="${isOther?v:''}">`;
     }
     else if(r.t==='action'){
-       const opts = ['แจ้งช่างเข้าพื้นที่','ตรวจสอบ / ปรับตั้งค่าระบบ','ซ่อมแซม / เปลี่ยนอุปกรณ์','ติดตั้ง / เดินสายเพิ่มเติม','นัดหมาย / รอสั่งอะไหล่','แจ้งผลให้ลูกค้าทราบ','🌟 ส่งรีวิว 5 ดาว'];
+       const opts = ['🛠 ตรวจเช็ค / ตั้งค่าระบบออนไลน์','📷 ติดตั้งกล้องวงจรปิด (CCTV)','🔧 ซ่อมแซม / เคลมกล้องวงจรปิด','📠 ติดตั้งสแกนนิ้ว / สแกนหน้า (Access Control)','🚪 ติดตั้ง / ซ่อมแซมระบบประตูแม่เหล็ก','📦 ติดตั้ง / เซ็ตอัพเครื่องบันทึก (NVR/DVR)','🌐 เดินสาย LAN / เซ็ตอัพระบบ Network','⚡ เดินสายไฟ / ซ่อมแซม Power Supply','📅 นัดหมายช่างเข้าสำรวจหน้างาน','⏳ รอสั่งอะไหล่ / รอสินค้าเคลม','🗣️ แจ้งผลซ่อม / เสนอราคาให้ลูกค้า','🌟 ส่งมอบงาน / ขอรีวิว 5 ดาว'];
        let isOther = v && !opts.includes(v);
        let selVal = isOther ? 'อื่นๆ' : v;
        inp=`<select id="mf_${r.k}" onchange="modActionChange()"><option value="">—</option>${opts.map(o=>`<option${selVal===o?' selected':''}>${o}</option>`).join('')}<option${selVal==='อื่นๆ'?' selected':''}>อื่นๆ</option></select></div><div class="mfg" id="mf_${r.k}_other_div" style="display:${isOther?'block':'none'}; margin-top:6px;"><label>ระบุการดำเนินการเพิ่มเติม</label><input type="text" id="mf_${r.k}_other" value="${isOther?v:''}">`;
