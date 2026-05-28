@@ -1165,6 +1165,8 @@ function modResultChange(){
 function buildFields(d){
   const rows=[
     {sec:'📞 Call Center'},
+    // 🌟 แทรกช่องแก้ไขเวลาหลักตรงนี้
+    {k:'timestamp',l:'เวลาที่รับแจ้งเรื่อง (แก้ไขเพื่อย้ายลำดับแถวได้)',t:'dt_fs'},
     {k:'name',l:'ชื่อลูกค้า',t:'text'},{k:'type',l:'ประเภทงาน',t:'type'},
     {k:'phone',l:'เบอร์โทรศัพท์',t:'text'},{k:'channel',l:'ช่องทางติดต่อ',t:'channel'},
     {k:'problem',l:'ปัญหา / ระบบ',t:'problem_ui'}, 
@@ -1181,11 +1183,11 @@ function buildFields(d){
       h+=`<div class="msec">${r.sec}</div><div class="mgrid">`;ig=true;return;
     }
     
+    // ... [ระบบ Dropdown ปัญหา/ระบบ] ...
     if(r.t==='problem_ui'){
        const pv = d.problem || '';
        let isCI = (d.type || '').startsWith('CI');
        let m_cat = '', s_cat = '', site = '', pts = '';
-       
        if(pv.includes('[CI]')){
           const m = pv.match(/ระบบ:\s*(.*?)\s*\|\s*หน้างาน:\s*(.*?)\s*\|\s*จุด:\s*(.*)/);
           if(m){ m_cat=m[1]; site=m[2]; pts=m[3]; } else { m_cat=pv; }
@@ -1195,44 +1197,27 @@ function buildFields(d){
        } else { m_cat = pv; }
 
        let isMainOther = m_cat && !['กล้อง Digital','กล้อง Analog','เครื่องบันทึก NVR','ระบบ Network','เครื่องสแกนนิ้วมือ','อื่นๆ',''].includes(m_cat);
-       let mainSelVal = isMainOther ? 'อื่นๆ' : m_cat;
-       let mainOtherVal = isMainOther ? m_cat : '';
-
+       let mainSelVal = isMainOther ? 'อื่นๆ' : m_cat; let mainOtherVal = isMainOther ? m_cat : '';
        let subOpts = MOD_SUB_CATS[mainSelVal] || MOD_SUB_CATS['อื่นๆ'];
        let isSubOther = s_cat && !subOpts.includes(s_cat) && s_cat !== '';
-       let subSelVal = isSubOther ? 'อื่นๆ' : s_cat;
-       let subOtherVal = isSubOther ? s_cat : '';
-
+       let subSelVal = isSubOther ? 'อื่นๆ' : s_cat; let subOtherVal = isSubOther ? s_cat : '';
        const siteOpts = ['ที่พักอาศัย (บ้าน / คอนโด / หมู่บ้าน)','ธุรกิจ (ออฟฟิศ / ร้านค้า / อาคารพาณิชย์)','อุตสาหกรรม (โรงงาน / โกดัง / ลานจอด)','ไซต์งาน / โครงการ'];
        let isSiteOther = site && !siteOpts.includes(site) && site !== '';
-       let siteSelVal = isSiteOther ? 'อื่นๆ' : site;
-       let siteOtherVal = isSiteOther ? site : '';
-
+       let siteSelVal = isSiteOther ? 'อื่นๆ' : site; let siteOtherVal = isSiteOther ? site : '';
        let isPtsOther = pts && !['1','2','3','4','5','6','8','10','12','16','20','24','32','','อื่นๆ'].includes(pts);
-       let ptsSelVal = isPtsOther ? 'อื่นๆ' : pts;
-       let ptsOtherVal = isPtsOther ? pts : '';
+       let ptsSelVal = isPtsOther ? 'อื่นๆ' : pts; let ptsOtherVal = isPtsOther ? pts : '';
 
        h += `
          <div style="grid-column:1/-1; border:1px solid var(--border); border-radius:11px; padding:12px; background:var(--row-alt); margin-bottom:8px;">
            <div style="font-size:.68rem;font-weight:700;color:var(--g-md);margin-bottom:8px;">🛠 ระบบจัดการปัญหา (Dropdown)</div>
            <div class="mgrid" style="margin-bottom:8px">
-             <div class="mfg"><label>ระบบ / ประเภทปัญหา</label><select id="mf_main_cat" onchange="modMainCatChange()">
-               <option value="">— เลือกระบบ —</option>
-               ${['กล้อง Digital','กล้อง Analog','เครื่องบันทึก NVR','ระบบ Network','เครื่องสแกนนิ้วมือ','อื่นๆ'].map(o=>`<option${mainSelVal===o?' selected':''}>${o}</option>`).join('')}
-             </select></div>
+             <div class="mfg"><label>ระบบ / ประเภทปัญหา</label><select id="mf_main_cat" onchange="modMainCatChange()"><option value="">— เลือกระบบ —</option>${['กล้อง Digital','กล้อง Analog','เครื่องบันทึก NVR','ระบบ Network','เครื่องสแกนนิ้วมือ','อื่นๆ'].map(o=>`<option${mainSelVal===o?' selected':''}>${o}</option>`).join('')}</select></div>
              <div class="mfg" id="mf_main_cat_other_div" style="display:${isMainOther?'block':'none'}"><label>ระบุชื่อระบบ</label><input type="text" id="mf_main_cat_other" value="${mainOtherVal}"></div>
            </div>
            <div id="mf_ci_zone" style="display:${isCI?'block':'none'}">
              <div class="mgrid">
-               <div class="mfg"><label>ลักษณะหน้างาน</label><select id="mf_site_type" onchange="modSiteChange()">
-                 <option value="">— เลือกลักษณะหน้างาน —</option>
-                 ${siteOpts.map(o=>`<option${siteSelVal===o?' selected':''}>${o}</option>`).join('')}
-                 <option${siteSelVal==='อื่นๆ'?' selected':''}>อื่นๆ</option>
-               </select></div>
-               <div class="mfg"><label>จำนวนจุด</label><select id="mf_points" onchange="modPointsChange()">
-                 <option value="">— เลือกจำนวนจุด —</option>
-                 ${['1','2','3','4','5','6','8','10','12','16','20','24','32','อื่นๆ'].map(o=>`<option${ptsSelVal===o?' selected':''}>${o}</option>`).join('')}
-               </select></div>
+               <div class="mfg"><label>ลักษณะหน้างาน</label><select id="mf_site_type" onchange="modSiteChange()"><option value="">— เลือกลักษณะหน้างาน —</option>${siteOpts.map(o=>`<option${siteSelVal===o?' selected':''}>${o}</option>`).join('')}<option${siteSelVal==='อื่นๆ'?' selected':''}>อื่นๆ</option></select></div>
+               <div class="mfg"><label>จำนวนจุด</label><select id="mf_points" onchange="modPointsChange()"><option value="">— เลือกจำนวนจุด —</option>${['1','2','3','4','5','6','8','10','12','16','20','24','32','อื่นๆ'].map(o=>`<option${ptsSelVal===o?' selected':''}>${o}</option>`).join('')}</select></div>
              </div>
              <div class="mgrid" style="margin-top:8px;">
                 <div class="mfg" id="mf_site_type_other_div" style="display:${isSiteOther?'block':'none'};"><label>ระบุหน้างานเพิ่มเติม</label><input type="text" id="mf_site_type_other" value="${siteOtherVal}"></div>
@@ -1241,10 +1226,7 @@ function buildFields(d){
            </div>
            <div id="mf_cs_zone" style="display:${!isCI?'block':'none'}">
              <div class="mgrid">
-               <div class="mfg"><label>ปัญหา / อาการ</label><select id="mf_sub_cat" onchange="modSubCatChange()">
-                 <option value="">— เลือกปัญหา —</option>
-                 ${subOpts.map(o=>`<option${subSelVal===o?' selected':''}>${o}</option>`).join('')}
-               </select></div>
+               <div class="mfg"><label>ปัญหา / อาการ</label><select id="mf_sub_cat" onchange="modSubCatChange()"><option value="">— เลือกปัญหา —</option>${subOpts.map(o=>`<option${subSelVal===o?' selected':''}>${o}</option>`).join('')}</select></div>
                <div class="mfg" id="mf_sub_cat_other_div" style="display:${isSubOther?'block':'none'}"><label>ระบุอาการ</label><input type="text" id="mf_sub_cat_other" value="${subOtherVal}"></div>
              </div>
            </div>
@@ -1253,30 +1235,42 @@ function buildFields(d){
     }
 
     const v=esc(d[r.k]||'');let inp='';
-    if(r.t==='type')inp=`<select id="mf_${r.k}" onchange="modTypeChange()">${['CI1','CI2','CI3','CS1','CS2','CW','CH','CR'].map(o=>`<option${v===o?' selected':''}>${o}</option>`).join('')}</select>`;
+    
+    // 🌟 ระบบแปลงเวลาให้แก้ไขได้ง่ายๆ (สำหรับช่อง timestamp)
+    if(r.t==='dt_fs'){
+       let dtVal = '';
+       if(d[r.k] && d[r.k].toDate) {
+          const dt = d[r.k].toDate();
+          dt.setMinutes(dt.getMinutes() - dt.getTimezoneOffset());
+          dtVal = dt.toISOString().slice(0,16);
+       }
+       // ไฮไลท์กรอบสีเขียวให้รู้ว่าแก้วันที่ตรงนี้ได้
+       inp=`<input type="datetime-local" id="mf_${r.k}" value="${dtVal}" style="border-color:var(--g-md); background:var(--g-pale); font-weight:700;">`;
+    }
+    else if(r.t==='type')inp=`<select id="mf_${r.k}" onchange="modTypeChange()">${['CI1','CI2','CI3','CS1','CS2','CW','CH','CR'].map(o=>`<option${v===o?' selected':''}>${o}</option>`).join('')}</select>`;
     else if(r.t==='channel')inp=`<select id="mf_${r.k}">${['หน้าร้าน','Facebook','Line Official','โทรศัพท์'].map(o=>`<option${v===o?' selected':''}>${o}</option>`).join('')}</select>`;
     else if(r.t==='dt')inp=`<input type="datetime-local" id="mf_${r.k}" value="${esc(dtLocalVal(d[r.k]||''))}">`;
     else if(r.t==='progress'){
        const opts = ['อยู่ระหว่างดำเนินการ','รอลูกค้าตอบกลับ','รอนัดหมาย / รออะไหล่','สำเร็จ','ไม่สำเร็จ / ยกเลิก'];
-       let isOther = v && !opts.includes(v);
-       let selVal = isOther ? 'อื่นๆ' : v;
+       let isOther = v && !opts.includes(v); let selVal = isOther ? 'อื่นๆ' : v;
        inp=`<select id="mf_${r.k}" onchange="modProgressChange()"><option value="">—</option>${opts.map(o=>`<option${selVal===o?' selected':''}>${o}</option>`).join('')}<option${selVal==='อื่นๆ'?' selected':''}>อื่นๆ</option></select></div><div class="mfg" id="mf_${r.k}_other_div" style="display:${isOther?'block':'none'}; margin-top:6px;"><label>ระบุความคืบหน้าเพิ่มเติม</label><input type="text" id="mf_${r.k}_other" value="${isOther?v:''}">`;
     }
     else if(r.t==='action'){
-       const opts = ['🛠 ตรวจเช็ค / ตั้งค่าระบบออนไลน์','📷 ติดตั้งกล้องวงจรปิด (CCTV)','🔧 ซ่อมแซม / เคลมกล้องวงจรปิด','📠 ติดตั้งสแกนนิ้ว / สแกนหน้า (Access Control)','🚪 ติดตั้ง / ซ่อมแซมระบบประตูแม่เหล็ก','📦 ติดตั้ง / เซ็ตอัพเครื่องบันทึก (NVR/DVR)','🌐 เดินสาย LAN / เซ็ตอัพระบบ Network','⚡ เดินสายไฟ / ซ่อมแซม Power Supply','📅 นัดหมายช่างเข้าสำรวจหน้างาน','⏳ รอสั่งอะไหล่ / รอสินค้าเคลม','🗣️ แจ้งผลซ่อม / เสนอราคาให้ลูกค้า','🌟 ส่งมอบงาน / ขอรีวิว 5 ดาว'];
-       let isOther = v && !opts.includes(v);
-       let selVal = isOther ? 'อื่นๆ' : v;
+       const opts = ['📷 งานติดตั้งใหม่ (กล้อง / สแกนนิ้ว / ประตู)','🔧 งานซ่อมแซม / ตรวจเช็ค / เคลมสินค้า','📅 เข้าสำรวจหน้างาน / ประเมินราคา','⏳ รอดำเนินการ / รอสั่งอะไหล่','✅ ปิดจ๊อบ / ส่งมอบงานให้ลูกค้า'];
+       let isOther = v && !opts.includes(v); let selVal = isOther ? 'อื่นๆ' : v;
        inp=`<select id="mf_${r.k}" onchange="modActionChange()"><option value="">—</option>${opts.map(o=>`<option${selVal===o?' selected':''}>${o}</option>`).join('')}<option${selVal==='อื่นๆ'?' selected':''}>อื่นๆ</option></select></div><div class="mfg" id="mf_${r.k}_other_div" style="display:${isOther?'block':'none'}; margin-top:6px;"><label>ระบุการดำเนินการเพิ่มเติม</label><input type="text" id="mf_${r.k}_other" value="${isOther?v:''}">`;
     }
     else if(r.t==='result'){
        const opts = ['จบงานเรียบร้อย','จบงาน — รอชำระเงิน','นัดซ่อมครั้งถัดไป','ยกเลิก / ตัดออก'];
-       let isOther = v && !opts.includes(v);
-       let selVal = isOther ? 'อื่นๆ' : v;
+       let isOther = v && !opts.includes(v); let selVal = isOther ? 'อื่นๆ' : v;
        inp=`<select id="mf_${r.k}" onchange="modResultChange()"><option value="">— ยังไม่ระบุ —</option>${opts.map(o=>`<option${selVal===o?' selected':''}>${o}</option>`).join('')}<option${selVal==='อื่นๆ'?' selected':''}>อื่นๆ</option></select></div><div class="mfg" id="mf_${r.k}_other_div" style="display:${isOther?'block':'none'}; margin-top:6px;"><label>ระบุสถานะงานเพิ่มเติม</label><input type="text" id="mf_${r.k}_other" value="${isOther?v:''}">`;
     }
     else if(r.t==='ta')inp=`<textarea id="mf_${r.k}" rows="2">${v}</textarea>`;
     else inp=`<input type="text" id="mf_${r.k}" value="${v}">`;
-    h+=`<div class="mfg"${r.t==='ta'?' style="grid-column:1/-1"':''}><label>${r.l}</label>${inp}</div>`;
+    
+    // ดันช่องกรอกเวลาให้อยู่เต็มบรรทัด
+    let styleRow = (r.t==='ta' || r.t==='dt_fs') ? ' style="grid-column:1/-1"' : '';
+    h+=`<div class="mfg"${styleRow}><label>${r.l}</label>${inp}</div>`;
   });
   if(ig)h+='</div>';
 
@@ -1638,8 +1632,13 @@ async function saveDoc(){
   
   const keys=['name','type','phone','channel','dateStart','dateEnd','cost','note'];
   const u={};
-  // Trim spaces to prevent system from seeing them as different people
   keys.forEach(k=>{const el=document.getElementById('mf_'+k);if(el)u[k]=el.value.trim();});
+
+  // 🌟 ดึงค่าเวลาที่ถูกแก้ไข แปลงกลับไปเป็นเวลาของฐานข้อมูล
+  const tsRaw = document.getElementById('mf_timestamp')?.value;
+  if(tsRaw) {
+      u.timestamp = firebase.firestore.Timestamp.fromDate(new Date(tsRaw));
+  }
 
   const pSel = document.getElementById('mf_progress').value;
   u.progress = pSel === 'อื่นๆ' ? document.getElementById('mf_progress_other').value.trim() : pSel;
@@ -1664,18 +1663,16 @@ async function saveDoc(){
      u.problem = `${m_cat_txt} > ${s_cat_txt}`;
   }
 
-  // Upgrade word checking to be more comprehensive (Intercept red color first)
   const r = u.result || '';
   const p = u.progress || '';
   if (r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก')) {
-     u.rowColor = '#fca5a5'; // Red
+     u.rowColor = '#fca5a5';
   } else if (r.includes('จบงาน') || p.includes('สำเร็จ')) {
-     u.rowColor = '#bbf7d0'; // Green
+     u.rowColor = '#bbf7d0';
   } else {
-     u.rowColor = ''; // Clear color
+     u.rowColor = ''; 
   }
   
-  // Clear old memory color that the table remembered
   if (typeof rowColors !== 'undefined' && rowColors[editId]) {
      delete rowColors[editId];
   }
@@ -1693,31 +1690,20 @@ async function saveDoc(){
   }
   
   try{
-    // Smart system: Find if there are other records with the same name and phone
     const duplicateDocs = docs.filter(d => 
-        d._id !== editId && 
-        u.name !== '' && 
-        u.phone !== '' &&
-        (d.name||'').trim() === u.name && 
-        (d.phone||'').trim() === u.phone
+        d._id !== editId && u.name !== '' && u.phone !== '' &&
+        (d.name||'').trim() === u.name && (d.phone||'').trim() === u.phone
     );
 
     if (duplicateDocs.length > 0) {
         const batch = db.batch();
-        // 1. Delete all old duplicate records
-        duplicateDocs.forEach(d => {
-            batch.delete(db.collection('customers').doc(d._id));
-        });
-        
-        // 2. Update the current record and push the timestamp to the top
-        u.timestamp = firebase.firestore.FieldValue.serverTimestamp(); 
+        duplicateDocs.forEach(d => { batch.delete(db.collection('customers').doc(d._id)); });
+        // 🌟 ปลดล็อก: ใช้ u.timestamp ตามที่เราแก้ ไม่บังคับเป็นเวลาปัจจุบันแล้ว
         batch.update(db.collection('customers').doc(editId), u);
-        
         await batch.commit();
         closeModal();
         toast(`✅ อัปเดตและเคลียร์รายการซ้ำ ${duplicateDocs.length} รายการ`);
     } else {
-        // Normal update (no duplicates)
         await db.collection('customers').doc(editId).update(u);
         closeModal();
         toast('✅ บันทึกเรียบร้อยแล้ว');
