@@ -1346,7 +1346,7 @@ function setMsg(m){document.getElementById('tbody').innerHTML=`<tr><td colspan="
 let _tt;
 function toast(m){const e=document.getElementById('toastEl');e.textContent=m;e.classList.add('on');clearTimeout(_tt);_tt=setTimeout(()=>e.classList.remove('on'),3000);}
 
-// ── ฟังก์ชัน Export Excel (อัปเกรดระบบกรองสถานะ 100% ขั้นเด็ดขาด) ──
+// ── ฟังก์ชัน Export Excel (อัปเกรดเพิ่มคอลัมน์ผู้บันทึก) ──
 function exportToExcel(statusFilter = 'all') {
   if (!docs || docs.length === 0) return toast('⚠️ ไม่มีข้อมูลครับ');
   
@@ -1362,13 +1362,13 @@ function exportToExcel(statusFilter = 'all') {
     else currentDocs = currentDocs.filter(d => (d.type || '').toUpperCase() === activeTab.toUpperCase());
   }
   
-  // 2. กรองตามสถานะแบบ "เด็ดขาด" (กันคำว่า "ไม่สำเร็จ" ทะลุเข้า "สำเร็จ")
+  // 2. กรองตามสถานะ
   if (statusFilter === 'success') {
      currentDocs = currentDocs.filter(d => {
          const r = d.result||'', p = d.progress||'';
          const isFail = r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก');
          const isSuccess = r.includes('จบงาน') || p.includes('สำเร็จ');
-         return !isFail && isSuccess; // ต้องสำเร็จจริง และห้ามมีคำว่าไม่สำเร็จ
+         return !isFail && isSuccess;
      });
   } else if (statusFilter === 'fail') {
      currentDocs = currentDocs.filter(d => {
@@ -1388,10 +1388,13 @@ function exportToExcel(statusFilter = 'all') {
 
   // 3. สร้างไฟล์ CSV
   let csv = '\uFEFF';
-  csv += "วันที่แจ้ง,ชื่อลูกค้า,เบอร์โทร,ประเภท,รายละเอียดหน้างาน,ความคืบหน้า,ผลลัพธ์,หมายเหตุ\n";
+  // 🌟 เพิ่มคอลัมน์ผู้บันทึกลงในหัว Excel
+  csv += "วันที่แจ้ง,ชื่อลูกค้า,เบอร์โทร,ประเภท,รายละเอียดหน้างาน,ความคืบหน้า,ผลลัพธ์,ผู้บันทึก,หมายเหตุ\n";
   currentDocs.forEach(d => {
     const dateStr = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleString('th-TH') : '';
-    csv += `"${dateStr}","${d.name||''}","${d.phone||''}","${d.type||''}","${(d.problem||'').replace(/"/g,'""')}","${(d.progress||'').replace(/"/g,'""')}","${(d.result||'').replace(/"/g,'""')}","${(d.note||'').replace(/"/g,'""')}"\n`;
+    // 🌟 ดึงชื่อผู้บันทึกเต็มๆ
+    let submitter = d.submittedBy || d.updatedBy || 'ระบบ (ข้อมูลเก่า)';
+    csv += `"${dateStr}","${d.name||''}","${d.phone||''}","${d.type||''}","${(d.problem||'').replace(/"/g,'""')}","${(d.progress||'').replace(/"/g,'""')}","${(d.result||'').replace(/"/g,'""')}","${submitter}","${(d.note||'').replace(/"/g,'""')}"\n`;
   });
   
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1403,11 +1406,11 @@ function exportToExcel(statusFilter = 'all') {
   toast('✅ ดาวน์โหลด Excel สำเร็จ!');
 }
 
-/// ── Export Image Function (Upgraded with Customer List Table) ──
+/// ── Export Image Function (อัปเกรดเพิ่มรายชื่อคนกรอกแบบเต็ม) ──
 function exportStatsAsImage(statusFilter = 'all') {
   if (!docs || docs.length === 0) return toast('⚠️ ไม่มีข้อมูลให้สร้างสถิติครับ');
 
-  // 1. Filter by Active Tab
+  // 1. กรองตามแท็บ
   let currentDocs = docs;
   if (activeTab !== 'ทั้งหมด') {
     if (activeTab === '✅ จบงาน') currentDocs = currentDocs.filter(d => (d.result || '').includes('จบงาน'));
@@ -1419,7 +1422,7 @@ function exportStatsAsImage(statusFilter = 'all') {
     else currentDocs = currentDocs.filter(d => (d.type || '').toUpperCase() === activeTab.toUpperCase());
   }
 
-  // 2. Strict Filter by Selected Status
+  // 2. กรองตามสถานะ
   if (statusFilter === 'success') {
      currentDocs = currentDocs.filter(d => {
          const r = d.result||'', p = d.progress||'';
@@ -1444,7 +1447,7 @@ function exportStatsAsImage(statusFilter = 'all') {
   if (currentDocs.length === 0) return toast('⚠️ ไม่มีข้อมูลในสถานะที่เลือกครับ');
   toast('⏳ กำลังประมวลผลข้อมูล วาดกราฟ และโหลดรายชื่อ...');
 
-  // 3. Calculate Summary Counts
+  // 3. คำนวณกราฟ
   let success = 0, fail = 0, pending = 0;
   currentDocs.forEach(d => {
     const r = d.result || '', p = d.progress || '';
@@ -1456,7 +1459,7 @@ function exportStatsAsImage(statusFilter = 'all') {
   const sName = statusFilter === 'all' ? 'รวมทุกสถานะ' : (statusFilter === 'success' ? 'เฉพาะเคสที่สำเร็จแล้ว' : (statusFilter === 'fail' ? 'เฉพาะเคสที่ไม่สำเร็จ' : 'เฉพาะเคสที่รอดำเนินการ'));
   const uniqueId = 'exportChart_' + Date.now();
 
-  // 4. Generate HTML for Customer List Table Rows
+  // 4. สร้าง HTML ตารางแถว
   const tableRowsHTML = currentDocs.map((d, index) => {
     const ts = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleDateString('th-TH') : '-';
     const r = d.result || '';
@@ -1465,7 +1468,6 @@ function exportStatsAsImage(statusFilter = 'all') {
     let bgRow = '#ffffff';
     let stText = r || p || '-';
 
-    // Apply color coding for each row based on status
     if (r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก')) {
         stColor = '#b91c1c'; bgRow = '#fef2f2';
     } else if (r.includes('จบงาน') || p.includes('สำเร็จ')) {
@@ -1474,24 +1476,28 @@ function exportStatsAsImage(statusFilter = 'all') {
         stColor = '#b45309'; bgRow = '#fffbeb';
     }
 
+    // 🌟 ดึงชื่อมาโชว์เต็มๆ ไม่ตัด @ทิ้ง
+    let submitter = d.submittedBy || d.updatedBy || 'ระบบ (ข้อมูลเก่า)';
+
     return `
     <tr style="background-color: ${bgRow}; color: ${stColor};">
-        <td style="padding: 12px; border: 1px solid #d1e8d1; text-align: center;">${index + 1}</td>
-        <td style="padding: 12px; border: 1px solid #d1e8d1; text-align: center;">${ts}</td>
-        <td style="padding: 12px; border: 1px solid #d1e8d1; font-weight: bold;">${d.name || '-'}</td>
-        <td style="padding: 12px; border: 1px solid #d1e8d1; text-align: center;">${d.phone || '-'}</td>
-        <td style="padding: 12px; border: 1px solid #d1e8d1;">${d.problem || '-'}</td>
-        <td style="padding: 12px; border: 1px solid #d1e8d1; text-align: center; font-weight: bold;">${stText}</td>
+        <td style="padding: 10px 6px; border: 1px solid #d1e8d1; text-align: center;">${index + 1}</td>
+        <td style="padding: 10px 6px; border: 1px solid #d1e8d1; text-align: center;">${ts}</td>
+        <td style="padding: 10px 6px; border: 1px solid #d1e8d1; font-weight: bold;">${d.name || '-'}</td>
+        <td style="padding: 10px 6px; border: 1px solid #d1e8d1; text-align: center;">${d.phone || '-'}</td>
+        <td style="padding: 10px 6px; border: 1px solid #d1e8d1;">${d.problem || '-'}</td>
+        <td style="padding: 10px 6px; border: 1px solid #d1e8d1; text-align: center; color: #166534; font-size: 14px;">${submitter}</td>
+        <td style="padding: 10px 6px; border: 1px solid #d1e8d1; text-align: center; font-weight: bold;">${stText}</td>
     </tr>
     `;
   }).join('');
 
-  // 5. Create Hidden Canvas Container (Expanded width to 900px for table fit)
+  // 5. สร้างกรอบ Canvas (ขยายความกว้างเป็น 1150px เพื่อให้ชื่ออีเมลยาวๆ ไม่เบียด)
   const container = document.createElement('div');
   container.style.position = 'absolute';
   container.style.left = '-9999px';
   container.style.top = '0';
-  container.style.width = '900px'; 
+  container.style.width = '1150px'; // 🌟 ขยายให้กว้างขึ้น
   container.style.backgroundColor = '#ffffff';
   container.style.padding = '40px';
   container.style.fontFamily = "'Kanit', sans-serif";
@@ -1533,12 +1539,13 @@ function exportStatsAsImage(statusFilter = 'all') {
         <table style="width: 100%; border-collapse: collapse; font-size: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
             <thead>
                 <tr style="background: #166534; color: #ffffff;">
-                    <th style="padding: 12px; border: 1px solid #d1e8d1; width: 5%;">ลำดับ</th>
-                    <th style="padding: 12px; border: 1px solid #d1e8d1; width: 12%;">วันที่</th>
-                    <th style="padding: 12px; border: 1px solid #d1e8d1; width: 20%;">ชื่อลูกค้า</th>
-                    <th style="padding: 12px; border: 1px solid #d1e8d1; width: 15%;">เบอร์โทร</th>
-                    <th style="padding: 12px; border: 1px solid #d1e8d1; width: 33%;">รายละเอียดหน้างาน</th>
-                    <th style="padding: 12px; border: 1px solid #d1e8d1; width: 15%;">สถานะ</th>
+                    <th style="padding: 12px 6px; border: 1px solid #d1e8d1; width: 5%;">ลำดับ</th>
+                    <th style="padding: 12px 6px; border: 1px solid #d1e8d1; width: 8%;">วันที่</th>
+                    <th style="padding: 12px 6px; border: 1px solid #d1e8d1; width: 15%;">ชื่อลูกค้า</th>
+                    <th style="padding: 12px 6px; border: 1px solid #d1e8d1; width: 12%;">เบอร์โทร</th>
+                    <th style="padding: 12px 6px; border: 1px solid #d1e8d1; width: 28%;">รายละเอียดหน้างาน</th>
+                    <th style="padding: 12px 6px; border: 1px solid #d1e8d1; width: 18%;">ผู้บันทึก</th>
+                    <th style="padding: 12px 6px; border: 1px solid #d1e8d1; width: 14%;">สถานะ</th>
                 </tr>
             </thead>
             <tbody>
@@ -1553,7 +1560,6 @@ function exportStatsAsImage(statusFilter = 'all') {
   `;
   document.body.appendChild(container);
 
-  // 6. Draw Chart
   if (typeof Chart !== 'undefined') {
       const ctx = document.getElementById(uniqueId);
       new Chart(ctx, {
@@ -1573,9 +1579,7 @@ function exportStatsAsImage(statusFilter = 'all') {
       });
   }
 
-  // 7. Render HTML to PNG Image
   setTimeout(() => {
-    // Enable full scroll height capture for long tables
     html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: container.scrollWidth, windowHeight: container.scrollHeight }).then(canvas => {
       const link = document.createElement('a');
       link.download = `AdvancePlus_Stats_${activeTab.replace(/[/\\?%*:|"<>]/g, '')}_${new Date().getTime()}.png`;
@@ -1585,7 +1589,7 @@ function exportStatsAsImage(statusFilter = 'all') {
       document.body.removeChild(container);
       toast('✅ บันทึกรูปภาพพร้อมรายชื่อสำเร็จแล้ว!');
     });
-  }, 800); // Wait slightly longer for large tables to render perfectly
+  }, 800); 
 }
 
 // ── ระบบจัดการสีแบบ Excel ──
