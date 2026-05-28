@@ -204,7 +204,8 @@ th { position: relative; }
 .stat-card { background: var(--white); padding: 15px 20px; border-radius: 15px; border: 1px solid var(--border); box-shadow: var(--shadow); display: flex; align-items: center; }
 .stat-label { font-size: 0.75rem; color: var(--txt-2); font-weight: 600; text-transform: uppercase; }
 .stat-value { font-size: 2.5rem; font-weight: 700; color: var(--g-dk); line-height: 1.2; }
-.summary-list { display: flex; gap: 10px; overflow-x: auto; padding: 5px 0; scrollbar-width: thin; }
+.summary-list { display: flex; gap: 10px; overflow-x: auto; padding: 5px 0; scrollbar-width: none; -ms-overflow-style: none; }
+.summary-list::-webkit-scrollbar { display: none; }
 .summary-item { background: var(--inp); padding: 10px 15px; border-radius: 12px; min-width: 140px; border: 1px solid var(--border); flex-shrink: 0; }
 .summary-date { font-size: 0.7rem; font-weight: 700; margin-bottom: 5px; color: var(--txt); }
 .summary-mini-list { font-size: 0.65rem; color: var(--txt-2); line-height: 1.5; }
@@ -334,11 +335,13 @@ th { position: relative; }
   </div>
 </div>
 
-<div style="overflow-x:auto;padding:0 1.1rem 6rem;">
-  <table style="min-width:720px;width:100%;">
-    <thead id="thead"></thead>
-    <tbody id="tbody"><tr><td colspan="13" class="no-data">⏳ กำลังโหลด...</td></tr></tbody>
-  </table>
+<div style="padding: 0 1.1rem;">
+  <div style="overflow-x: auto; padding-bottom: 6rem;">
+    <table style="min-width: 720px; width: 100%;">
+      <thead id="thead"></thead>
+      <tbody id="tbody"><tr><td colspan="15" class="no-data">⏳ กำลังโหลด...</td></tr></tbody>
+    </table>
+  </div>
 </div>
 
 <button class="fab" onclick="location.href='index.html'" title="กรอกฟอร์มใหม่">➕</button>
@@ -396,6 +399,40 @@ if(window._userRole==='admin'){
     roleBtn.style.color='#b45309'; roleBtn.style.borderColor='#fde047'; roleBtn.style.background='#fef3c7';
     roleBtn.onclick=()=>location.href='roles-admin.html';
     document.querySelector('.topbar .tbtn')?.insertAdjacentElement('beforebegin',roleBtn);
+
+// --- เครื่องมือซ่อมแซมข้อมูลเก่า (เติมชื่อคนกรอกย้อนหลัง) ---
+    const fixSubmitterBtn = document.createElement('button');
+    fixSubmitterBtn.className = 'tbtn';
+    fixSubmitterBtn.style.color = '#b45309';
+    fixSubmitterBtn.style.borderColor = '#fcd34d';
+    fixSubmitterBtn.style.background = '#fef3c7';
+    fixSubmitterBtn.innerHTML = '🔧 เติมชื่อย้อนหลัง';
+    fixSubmitterBtn.onclick = async function() {
+        // กวาดหาข้อมูลที่ยังไม่มีชื่อคนกรอก
+        const oldDocs = docs.filter(d => !d.submittedBy);
+        if (oldDocs.length === 0) {
+            return alert('เยี่ยมมาก! ไม่มีข้อมูลเก่าที่ขาดชื่อแล้วครับ ทุกรายการมีชื่อคนกรอกครบถ้วน 🎉');
+        }
+        
+        const defaultName = prompt(`ตรวจพบข้อมูลเก่าที่ยังไม่มีชื่อคนกรอกจำนวน ${oldDocs.length} รายการ\\n\\nกรุณาพิมพ์ "อีเมล" หรือ "ชื่อพนักงาน" ที่ต้องการให้แสดงย้อนหลัง:\\n(เช่น admin@gmail.com หรือ พี่เอ)`);
+        if (!defaultName) return; 
+        
+        if (!confirm(`ยืนยันที่จะอัปเดตข้อมูลเก่าทั้ง ${oldDocs.length} รายการ ให้เป็นชื่อ "${defaultName}" ใช่หรือไม่?\\n(ขั้นตอนนี้จะบันทึกลงฐานข้อมูลถาวร)`)) return;
+        
+        toast(`⏳ กำลังอัปเดตชื่อคนกรอกย้อนหลัง...`);
+        try {
+            const batch = db.batch();
+            oldDocs.forEach(d => {
+                batch.update(db.collection('customers').doc(d._id), { submittedBy: defaultName.trim() });
+            });
+            await batch.commit();
+            toast('✅ เติมชื่อคนกรอกย้อนหลังสำเร็จแล้ว!');
+            setTimeout(() => location.reload(), 1500); // รีเฟรชหน้าเว็บอัตโนมัติ
+        } catch (err) {
+            toast('⚠️ เกิดข้อผิดพลาด: ' + err.message);
+        }
+    };
+    document.querySelector('.topbar .tbtn')?.insertAdjacentElement('beforebegin', fixSubmitterBtn);
 
     // --- 2. เมนูส่งออกข้อมูล (Export Dropdown: Excel & Image) ---
     const exportMenu = document.createElement('select');
@@ -568,7 +605,6 @@ function updateCounts(){
   });
 }
 
-// ฟังก์ชันคำนวณยอด Dashboard
 // ฟังก์ชันคำนวณยอด Dashboard และสร้างกราฟสถิติ
 function updateDailyDashboard() {
   const summary = {}; 
@@ -615,14 +651,25 @@ function updateDailyDashboard() {
       `;
     }).join('');
 
+    // 🌟 ระบบเลื่อนเมาส์ (Mouse Wheel) ซ้าย-ขวาฉบับปลดล็อกบราวเซอร์
+    if (!summaryList.dataset.wheelBound) {
+        summaryList.addEventListener('wheel', function(e) {
+            if (e.deltaY !== 0) {
+                e.preventDefault(); // ตอนนี้คำสั่งล็อกหน้าเว็บจะทำงานได้แล้วครับ
+                this.scrollLeft += (e.deltaY > 0 ? 120 : -120); // หมุนปุ๊บ เลื่อนปั๊บ ลื่นๆ เลย
+            }
+        }, { passive: false }); // 👈 หัวใจสำคัญอยู่ตรงนี้ครับ! ปลดล็อก Passive Listener
+        summaryList.dataset.wheelBound = "true";
+    }
+
     // ── 📊 ส่วนสร้างกราฟ (Chart.js) ──
     if(typeof Chart === 'undefined') return; 
     
     Chart.defaults.font.family = "'Kanit', sans-serif";
     Chart.defaults.color = "#9ab89a";
 
-    // 1. กราฟแท่ง (Bar Chart) - 7 วันล่าสุด
-    const last7Dates = sortedDates.slice(0, 7).reverse(); // 7 วันเรียงจากเก่าไปใหม่
+    // 1. กราฟแท่ง (Bar Chart)
+    const last7Dates = sortedDates.slice(0, 7).reverse(); 
     const trendLabels = last7Dates.map(d => d === todayStr ? 'วันนี้' : d.substring(0,5));
     const trendData = last7Dates.map(d => summary[d].total);
 
@@ -653,7 +700,7 @@ function updateDailyDashboard() {
         });
     }
 
-    // 2. กราฟโดนัท (Doughnut Chart) - สัดส่วนประเภทงานทั้งหมด
+    // 2. กราฟโดนัท (Doughnut Chart)
     const typeCount = {};
     docs.forEach(d => {
         const t = d.type || 'ไม่ระบุ';
@@ -662,7 +709,6 @@ function updateDailyDashboard() {
     const typeLabels = Object.keys(typeCount);
     const typeData = Object.values(typeCount);
     
-    // กำหนดสีให้แต่ละประเภท (ให้สีตรงกับ Tag)
     const colorsMap = {
       'CI1': '#3b82f6', 'CI2': '#60a5fa', 'CI3': '#1d4ed8',
       'CS1': '#f59e0b', 'CS2': '#fbbf24',
@@ -786,19 +832,17 @@ function renderHead(){
 
 function renderBody(rows){
   const tb=document.getElementById('tbody');
-  if(!rows.length){tb.innerHTML='<tr><td colspan="14" class="no-data">ไม่พบข้อมูล</td></tr>';return;}
+  if(!rows.length){tb.innerHTML='<tr><td colspan="15" class="no-data">ไม่พบข้อมูล</td></tr>';return;}
   
   const isStaff = window._userRole === 'staff';
 
   tb.innerHTML=rows.map(d=>{
     const ts=d.timestamp?.toDate?fmtDate(d.timestamp.toDate()):(d.timestamp||'—');
     
-    // 🌟 Smart Auto-Color Override (แก้บั๊กสีเขียวค้างจากฐานข้อมูลเก่า)
     const rTxt = d.result || '';
     const pTxt = d.progress || '';
     let finalColor = d.rowColor || rowColors[d._id] || '';
     
-    // บังคับเช็คแดงก่อนเขียวเสมอ!
     if (rTxt.includes('ตัดออก') || rTxt.includes('ยกเลิก') || pTxt.includes('ไม่สำเร็จ') || pTxt.includes('ยกเลิก')) {
         finalColor = '#fca5a5';
     } else if (rTxt.includes('จบงาน') || pTxt.includes('สำเร็จ')) {
@@ -819,6 +863,10 @@ function renderBody(rows){
     const chkHtml = isStaff ? '' : `<input type="checkbox" ${checked?'checked':''} style="accent-color:var(--g-md);cursor:pointer;" onclick="toggleSelect('${d._id}',event)">`;
     const tdClick = isStaff ? '' : `onclick="toggleSelect('${d._id}',event)"`;
 
+    // โชว์ชื่ออีเมลคนกรอก (ตัด @gmail.com ออกเพื่อให้สั้นอ่านง่าย)
+    let submitter = d.submittedBy || '';
+    let showSubmitter = submitter ? submitter.split('@')[0] : '⚠️ ขาดชื่อ';
+
     return `<tr ${bg} id="row_${d._id}">
       <td style="width:32px;padding:.4rem;" ${tdClick}>${chkHtml}</td>
       <td onclick="openModal('${d._id}')">${esc(ts)}</td>
@@ -833,6 +881,7 @@ function renderBody(rows){
       <td class="w" style="max-width:130px" onclick="openModal('${d._id}')">${esc(d.action||'')}</td>
       <td onclick="openModal('${d._id}')">${esc(d.result||'')}</td>
       <td onclick="openModal('${d._id}')">${esc(d.cost||'')}</td>
+      <td style="color:#b45309; font-size:0.68rem; font-weight:700; text-align:center;" onclick="openModal('${d._id}')">👤 ${esc(showSubmitter)}</td>
       <td class="w" onclick="openModal('${d._id}')">${esc(d.note||'')}</td>
     </tr>`;
   }).join('');
@@ -999,14 +1048,22 @@ function closeModal(){
 }
 
 function openModal(id){
-  // ป้องกัน Staff เปิดหน้าต่างแก้ไข
   if(window._userRole === 'staff' || window._staffReadOnly){ 
       toast('📋 Staff — ทำได้แค่ดูข้อมูลเท่านั้นครับ'); 
       return; 
   }
   editId=id;
   const d=docs.find(x=>x._id===id); if(!d) return;
-  document.getElementById('mtitle').innerHTML=`<b>${esc(d.name||'ไม่ระบุ')}</b>&nbsp;${typeTag(d.type||'')}`;
+  
+  // โชว์ชื่ออีเมลคนกรอก (ตัด @gmail.com ออกเพื่อให้สั้นอ่านง่าย)
+  let submitter = d.submittedBy || '';
+  let showSubmitter = submitter ? submitter.split('@')[0] : '⚠️ ยังไม่มีชื่อ (รอเติมย้อนหลัง)';
+  
+  document.getElementById('mtitle').innerHTML=`
+    <div style="display:flex; flex-direction:column; gap:2px;">
+        <div><b>${esc(d.name||'ไม่ระบุ')}</b>&nbsp;${typeTag(d.type||'')}</div>
+        <div style="font-size:0.7rem; color:#b45309; font-weight:600;">👤 ผู้บันทึก: ${esc(showSubmitter)}</div>
+    </div>`;
   document.getElementById('mbody').innerHTML=buildFields(d);
   document.getElementById('ov').classList.add('on');
   document.getElementById('ms').classList.add('on');
