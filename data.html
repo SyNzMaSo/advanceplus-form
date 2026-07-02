@@ -237,6 +237,7 @@ th { position: relative; }
   <div class="title">ข้อมูลลูกค้า <small>Advance Plus CRM</small></div>
   <span class="user" id="userEl"></span>
   <button class="tbtn" onclick="location.href='index.html'">📝 ฟอร์ม</button>
+  <button class="tbtn" style="color:#1d4ed8;border-color:#93c5fd;background:#dbeafe;" onclick="location.href='quotes.html'">📄 ใบเสนอราคา</button>
   <button class="tbtn" id="themeBtn" onclick="toggleTheme()">🌙</button>
   <button class="tbtn" onclick="doLogout()">ออก</button>
 </div>
@@ -305,9 +306,9 @@ th { position: relative; }
       <div class="stat-label">⭐ สรุปยอดวันนี้</div>
       <div class="stat-value" id="todayCount">0</div>
       <div id="todayBreakdown" class="breakdown-container"></div>
-      <button class="tbtn" onclick="exportPDF()" style="margin-top: 15px; width: 100%; height: 32px; font-size: 0.75rem; background: var(--g-pale); color: var(--g-dk); border-color: var(--g-lt); display: flex; justify-content: center; align-items: center; gap: 6px;">
-        📄 พิมพ์รายงาน PDF
-      </button>
+      <button class="tbtn" onclick="exportDailyPDF()" style="margin-top: 15px; width: 100%; height: 32px; font-size: 0.75rem; background: var(--g-pale); color: var(--g-dk); border-color: var(--g-lt); display: flex; justify-content: center; align-items: center; gap: 6px;">
+  📄 พิมพ์รายงาน PDF
+</button>
     </div>
   </div>
 
@@ -451,6 +452,7 @@ if(window._userRole==='admin'){
     document.querySelector('.topbar .tbtn')?.insertAdjacentElement('beforebegin', fixSubmitterBtn);
 
     // --- 2. เมนูส่งออกข้อมูล (Export Dropdown: Excel & Image) ---
+    // --- 2. เมนูส่งออกข้อมูล (Export Dropdown: Excel & Image) ---
     const exportMenu = document.createElement('select');
     exportMenu.className = 'tbtn';
     exportMenu.style.color = '#1d4ed8'; 
@@ -462,50 +464,50 @@ if(window._userRole==='admin'){
     exportMenu.style.paddingRight = '1.2rem';
     exportMenu.innerHTML = `
       <option value="" disabled selected>📥 ส่งออกข้อมูล</option>
-      <option value="excel">📊 เป็นไฟล์ Excel (อักษร)</option>
-      <option value="image">📸 เป็นรูปภาพ (กราฟ)</option>
+      <option value="excel">📊 เป็นไฟล์ Excel</option>
+      <option value="image">📸 เป็นรูปภาพกราฟ</option>
     `;
     exportMenu.onchange = function() {
       const val = this.value;
       this.value = ''; 
-      if(val === 'excel' || val === 'image') window.showExportPrompt(val);
+      if(val === 'excel' || val === 'image') {
+          // 🌟 ถ้ากำลังดูแท็บใบเสนอราคา หรือมีการติ๊ก Checkbox ไว้ ให้ข้าม Popup ถามสถานะไปเลย!
+          if (activeTab === '📄 ขอใบเสนอราคา' || selectedRows.size > 0) {
+              window.executeExport(val, 'all');
+          } else {
+              window.showExportPrompt(val);
+          }
+      }
     };
     document.querySelector('.topbar .tbtn')?.insertAdjacentElement('beforebegin', exportMenu);
 
-    // ── ฟังก์ชันสร้างหน้าต่างเลือกสถานะ (Smart Export Popup) - ปลดล็อกเป็น Global ──
     window.showExportPrompt = function(exportType) {
         const overlay = document.createElement('div');
         overlay.id = 'exportPromptOverlay';
-        overlay.style = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(20,40,20,0.6); z-index:9999; display:flex; justify-content:center; align-items:center; backdrop-filter:blur(4px);';
+        overlay.style = 'position:fixed; inset:0; background:rgba(20,40,20,0.6); z-index:9999; display:flex; justify-content:center; align-items:center; backdrop-filter:blur(4px);';
         
-        const typeName = exportType === 'excel' ? 'ไฟล์ตาราง Excel 📊' : 'รูปภาพกราฟสถิติ 📸';
+        let typeName = 'ไฟล์ตาราง Excel 📊';
+        if(exportType === 'image') typeName = 'รูปภาพกราฟสถิติ 📸';
         
         const box = document.createElement('div');
         box.style = 'background:#fff; padding:30px; border-radius:16px; width:340px; box-shadow:0 10px 30px rgba(0,0,0,0.3); text-align:center; font-family:"Kanit",sans-serif;';
         
-        // ผมแอบเติมลูกเล่นเวลามองเมาส์ไปโดนปุ่ม (Hover) ให้ปุ่มมันยุบตัวนิดๆ ดูเป็นปุ่มเกรดพรีเมียมขึ้นครับ
         box.innerHTML = `
             <h3 style="margin:0 0 10px; color:#15803d; font-size:1.4rem;">เลือกสถานะที่ต้องการ</h3>
             <p style="margin:0 0 20px; color:#4b6b4b; font-size:1rem;">หมวดหมู่: <span style="background:#dcfce7; padding:2px 8px; border-radius:8px; font-weight:bold;">${activeTab}</span><br><span style="font-size:0.85rem;">(${typeName})</span></p>
-            
-            <button onclick="window.executeExport('${exportType}', 'all')" style="width:100%; margin-bottom:10px; padding:12px; background:#f0fdf4; border:2px solid #bbf7d0; color:#166534; border-radius:10px; cursor:pointer; font-weight:600; font-size:1rem; transition:transform 0.15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='none'">📑 ดึงมาทั้งหมดทุกสถานะ</button>
-            
-            <button onclick="window.executeExport('${exportType}', 'success')" style="width:100%; margin-bottom:10px; padding:12px; background:#dcfce7; border:2px solid #86efac; color:#15803d; border-radius:10px; cursor:pointer; font-weight:600; font-size:1rem; transition:transform 0.15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='none'">✅ เอาเฉพาะ "สำเร็จ / จบงาน"</button>
-            
-            <button onclick="window.executeExport('${exportType}', 'fail')" style="width:100%; margin-bottom:10px; padding:12px; background:#fee2e2; border:2px solid #fca5a5; color:#b91c1c; border-radius:10px; cursor:pointer; font-weight:600; font-size:1rem; transition:transform 0.15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='none'">❌ เอาเฉพาะ "ไม่สำเร็จ / ยกเลิก"</button>
-            
-            <button onclick="window.executeExport('${exportType}', 'pending')" style="width:100%; margin-bottom:20px; padding:12px; background:#fef3c7; border:2px solid #fcd34d; color:#b45309; border-radius:10px; cursor:pointer; font-weight:600; font-size:1rem; transition:transform 0.15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='none'">⏳ เอาเฉพาะ "รอดำเนินการ"</button>
-            
+            <button onclick="window.executeExport('${exportType}', 'all')" style="width:100%; margin-bottom:10px; padding:12px; background:#f0fdf4; border:2px solid #bbf7d0; color:#166534; border-radius:10px; cursor:pointer; font-weight:600; font-size:1rem;">📑 ดึงมาทั้งหมดทุกสถานะ</button>
+            <button onclick="window.executeExport('${exportType}', 'success')" style="width:100%; margin-bottom:10px; padding:12px; background:#dcfce7; border:2px solid #86efac; color:#15803d; border-radius:10px; cursor:pointer; font-weight:600; font-size:1rem;">✅ เอาเฉพาะ "สำเร็จ / จบงาน"</button>
+            <button onclick="window.executeExport('${exportType}', 'fail')" style="width:100%; margin-bottom:10px; padding:12px; background:#fee2e2; border:2px solid #fca5a5; color:#b91c1c; border-radius:10px; cursor:pointer; font-weight:600; font-size:1rem;">❌ เอาเฉพาะ "ไม่สำเร็จ / ยกเลิก"</button>
+            <button onclick="window.executeExport('${exportType}', 'pending')" style="width:100%; margin-bottom:20px; padding:12px; background:#fef3c7; border:2px solid #fcd34d; color:#b45309; border-radius:10px; cursor:pointer; font-weight:600; font-size:1rem;">⏳ เอาเฉพาะ "รอดำเนินการ"</button>
             <div style="border-top:1px dashed #d1e8d1; padding-top:15px;">
                 <button onclick="document.body.removeChild(document.getElementById('exportPromptOverlay'))" style="padding:8px 25px; background:#f3f4f6; border:none; color:#4b5563; border-radius:8px; cursor:pointer; font-weight:600;">ยกเลิก</button>
             </div>
         `;
-        overlay.appendChild(box);
-        document.body.appendChild(overlay);
+        overlay.appendChild(box); document.body.appendChild(overlay);
     };
 
     window.executeExport = function(type, status) {
-        document.body.removeChild(document.getElementById('exportPromptOverlay'));
+        if(document.getElementById('exportPromptOverlay')) document.body.removeChild(document.getElementById('exportPromptOverlay'));
         if(type === 'excel') exportToExcel(status);
         else if(type === 'image') exportStatsAsImage(status);
     };
@@ -563,9 +565,15 @@ function toggleTheme(){
 
 // เพิ่ม Tab รีวิว และเปลี่ยนชื่อหัวข้อ ปัญหา
 const TABS=['ทั้งหมด','CI1','CI2', 'CI3', 'CS1','CS2','CW','CH','CR','✅ จบงาน','❌ ตัดออก','⭐ รีวิว 5 ดาว'];
-const KEYS=['timestamp','name','type','phone','channel','problem','dateStart','dateEnd','progress','action','result','cost','submittedBy','note'];
-const LBLS=['เวลา','ชื่อ','ประเภท','เบอร์','ช่องทาง','ปัญหา / รายละเอียดของงาน','เข้างาน','เสร็จงาน','ความคืบหน้า','การดำเนินการ','สถานะ','ค่าใช้จ่าย','ผู้บันทึก','หมายเหตุ'];
 
+const DEFAULT_KEYS=['timestamp','name','type','phone','channel','problem','dateStart','dateEnd','progress','action','result','cost','submittedBy','note'];
+const DEFAULT_LBLS=['เวลา','ชื่อลูกค้า','ประเภท','เบอร์','ช่องทาง','ปัญหา / รายละเอียดของงาน','เข้างาน','เสร็จงาน','ความคืบหน้า','การดำเนินการ','สถานะ','ค่าใช้จ่าย','ผู้บันทึก','หมายเหตุ'];
+
+const QUOTE_KEYS=['timestamp','name','tax','phone','channel','problem','note','images_btn'];
+const QUOTE_LBLS=['เวลาที่ขอ','ชื่อลูกค้า / บริษัท','เลขผู้เสียภาษี','เบอร์ติดต่อ','ช่องทาง','ระบบที่สนใจ / จำนวนจุด','รายละเอียดเพิ่มเติม','รูปภาพ'];
+
+let KEYS=[...DEFAULT_KEYS];
+let LBLS=[...DEFAULT_LBLS];
 // State
 let docs=[],activeTab='ทั้งหมด',filtered=[],editId=null,sc=0,sa=false,unsub=null;
 
@@ -617,13 +625,14 @@ function switchTab(t){
 function updateCounts(){
   TABS.forEach((t, i)=>{
     let n=0;
-    if(t==='ทั้งหมด') n=docs.length;
-    else if(t==='✅ จบงาน') n=docs.filter(d=>(d.result||'').includes('จบงาน')).length;
+    if(t==='ทั้งหมด') n=docs.filter(d => d.type !== 'Quote').length; // 🌟 ซ่อนจากหน้าทั้งหมด
+    else if(t==='✅ จบงาน') n=docs.filter(d=>(d.result||'').includes('จบงาน') && d.type !== 'Quote').length;
     else if(t==='❌ ตัดออก') n=docs.filter(d=>{
         const r=d.result||'', p=d.progress||'';
-        return r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก');
+        return (r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก')) && d.type !== 'Quote';
     }).length;
-    else if(t==='⭐ รีวิว 5 ดาว') n=docs.filter(d=> (d.problem||'').includes('รีวิว 5 ดาว') || (d.action||'').includes('รีวิว 5 ดาว')).length;
+    else if(t==='⭐ รีวิว 5 ดาว') n=docs.filter(d=> ((d.problem||'').includes('รีวิว 5 ดาว') || (d.action||'').includes('รีวิว 5 ดาว')) && d.type !== 'Quote').length;
+    else if(t==='📄 ขอใบเสนอราคา') n=docs.filter(d => d.type === 'Quote').length; // 🌟 นับเฉพาะ Quote
     else n=docs.filter(d=>(d.type||'').toUpperCase()===t.toUpperCase()).length;
     
     const e=document.getElementById('cnt_'+i); 
@@ -631,13 +640,40 @@ function updateCounts(){
   });
 }
 
+function applyTabFilter(){
+  // 🌟 สลับตารางอัตโนมัติ
+  if (activeTab === '📄 ขอใบเสนอราคา') {
+    KEYS = [...QUOTE_KEYS]; LBLS = [...QUOTE_LBLS];
+  } else {
+    KEYS = [...DEFAULT_KEYS]; LBLS = [...DEFAULT_LBLS];
+  }
+  if (sc >= KEYS.length) { sc = 0; sa = false; }
+
+  if (activeTab==='ทั้งหมด') filtered=docs.filter(d => d.type !== 'Quote');
+  else if (activeTab==='✅ จบงาน') filtered=docs.filter(d=>(d.result||'').includes('จบงาน') && d.type !== 'Quote');
+  else if (activeTab==='❌ ตัดออก') filtered=docs.filter(d=>{
+      const r=d.result||'', p=d.progress||'';
+      return (r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก')) && d.type !== 'Quote';
+  });
+  else if (activeTab==='⭐ รีวิว 5 ดาว') {
+    filtered=docs.filter(d=> ((d.problem||'').includes('รีวิว 5 ดาว') || (d.action||'').includes('รีวิว 5 ดาว')) && d.type !== 'Quote');
+  }
+  else if (activeTab==='📄 ขอใบเสนอราคา') filtered=docs.filter(d => d.type === 'Quote');
+  else filtered=docs.filter(d=>(d.type||'').toUpperCase()===activeTab.toUpperCase());
+  applyFilter();
+}
+
 // ฟังก์ชันคำนวณยอด Dashboard และสร้างกราฟสถิติ
+// ฟังก์ชันคำนวณยอด Dashboard และสร้างกราฟสถิติ (เตะใบเสนอราคาออก 1,000,000%)
 function updateDailyDashboard() {
   const summary = {}; 
   const todayStr = new Date().toLocaleDateString('th-TH');
 
   docs.forEach(d => {
-    if (!d.timestamp) return;
+    // 🌟 ระบบป้องกันภัยสูงสุด: ถ้าเป็น Quote หรือมีคำว่า [ขอใบเสนอราคา] ให้เตะทิ้งทันที ไม่เอามารวม!
+    const isQuote = d.type === 'Quote' || (d.problem || '').includes('[ขอใบเสนอราคา]');
+    if (!d.timestamp || isQuote) return; 
+    
     const date = d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp);
     const dStr = date.toLocaleDateString('th-TH');
     const type = d.type || 'ไม่ระบุ';
@@ -660,117 +696,51 @@ function updateDailyDashboard() {
 
   const summaryList = document.getElementById('dailySummaryList');
   if(summaryList) {
-    const sortedDates = Object.keys(summary)
-      .sort((a,b) => new Date(b.split('/').reverse().join('-')) - new Date(a.split('/').reverse().join('-')));
-    
-    const displayDates = sortedDates.slice(0, 10);
-    summaryList.innerHTML = displayDates.map(date => {
+    const sortedDates = Object.keys(summary).sort((a,b) => new Date(b.split('/').reverse().join('-')) - new Date(a.split('/').reverse().join('-'))).slice(0, 10);
+    summaryList.innerHTML = sortedDates.map(date => {
       const data = summary[date];
-      return `
-        <div class="summary-item">
-          <div class="summary-date">${date === todayStr ? '☀️ วันนี้' : date}</div>
-          <div class="summary-num" style="font-size:1.1rem; color:var(--g-dk); font-weight:700;">${data.total} เคส</div>
-          <div class="summary-mini-list">
-            ${Object.entries(data.types).map(([t,c]) => `${t}: ${c}`).join('<br>')}
-          </div>
-        </div>
-      `;
+      return `<div class="summary-item"><div class="summary-date">${date === todayStr ? '☀️ วันนี้' : date}</div><div class="summary-num" style="font-size:1.1rem; color:var(--g-dk); font-weight:700;">${data.total} เคส</div><div class="summary-mini-list">${Object.entries(data.types).map(([t,c]) => `${t}: ${c}`).join('<br>')}</div></div>`;
     }).join('');
 
-    // ── 📊 ส่วนสร้างกราฟ (Chart.js) ──
     if(typeof Chart === 'undefined') return; 
-    
-    Chart.defaults.font.family = "'Kanit', sans-serif";
-    Chart.defaults.color = "#9ab89a";
+    Chart.defaults.font.family = "'Kanit', sans-serif"; Chart.defaults.color = "#9ab89a";
 
-    // 1. กราฟแท่ง (Bar Chart)
-    const last7Dates = sortedDates.slice(0, 7).reverse(); 
-    const trendLabels = last7Dates.map(d => d === todayStr ? 'วันนี้' : d.substring(0,5));
-    const trendData = last7Dates.map(d => summary[d].total);
+    const sortedDatesForChart = Object.keys(summary).sort((a,b) => new Date(b.split('/').reverse().join('-')) - new Date(a.split('/').reverse().join('-'))).slice(0, 7).reverse();
+    const trendLabels = sortedDatesForChart.map(d => d === todayStr ? 'วันนี้' : d.substring(0,5));
+    const trendData = sortedDatesForChart.map(d => summary[d].total);
 
     const ctxTrend = document.getElementById('trendChart');
     if(ctxTrend) {
         if(window.trendChartInst) window.trendChartInst.destroy();
         window.trendChartInst = new Chart(ctxTrend, {
-            type: 'bar',
-            data: {
-                labels: trendLabels,
-                datasets: [{
-                    label: 'จำนวนเคส',
-                    data: trendData,
-                    backgroundColor: '#16a34a',
-                    borderRadius: 6,
-                    barPercentage: 0.6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false }, tooltip: { padding: 10 } },
-                scales: { 
-                  y: { beginAtZero: true, ticks: { stepSize: 1 } },
-                  x: { grid: { display: false } }
-                }
-            }
+            type: 'bar', data: { labels: trendLabels, datasets: [{ label: 'จำนวนเคส', data: trendData, backgroundColor: '#16a34a', borderRadius: 6, barPercentage: 0.6 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } }
         });
     }
 
-    // 2. กราฟโดนัท (Doughnut Chart)
     const typeCount = {};
-    docs.forEach(d => {
-        const t = d.type || 'ไม่ระบุ';
-        typeCount[t] = (typeCount[t] || 0) + 1;
+    docs.forEach(d => { 
+        const isQuote = d.type === 'Quote' || (d.problem || '').includes('[ขอใบเสนอราคา]');
+        if (isQuote) return; // ไม่เอา Quote ใส่กราฟโดนัท
+        const t = d.type || 'ไม่ระบุ'; 
+        typeCount[t] = (typeCount[t] || 0) + 1; 
     });
-    const typeLabels = Object.keys(typeCount);
-    const typeData = Object.values(typeCount);
     
-    const colorsMap = {
-      'CI1': '#3b82f6', 'CI2': '#60a5fa', 'CI3': '#1d4ed8',
-      'CS1': '#f59e0b', 'CS2': '#fbbf24',
-      'CW': '#8b5cf6', 'CR': '#f97316', 'CH': '#ec4899'
-    };
+    const typeLabels = Object.keys(typeCount); const typeData = Object.values(typeCount);
+    const colorsMap = { 'CI1': '#3b82f6', 'CI2': '#60a5fa', 'CI3': '#1d4ed8', 'CS1': '#f59e0b', 'CS2': '#fbbf24', 'CW': '#8b5cf6', 'CR': '#f97316', 'CH': '#ec4899' };
     const typeColors = typeLabels.map(t => colorsMap[t] || '#10b981');
 
     const ctxType = document.getElementById('typeChart');
     if(ctxType) {
         if(window.typeChartInst) window.typeChartInst.destroy();
         window.typeChartInst = new Chart(ctxType, {
-            type: 'doughnut',
-            data: {
-                labels: typeLabels,
-                datasets: [{
-                    data: typeData,
-                    backgroundColor: typeColors,
-                    borderWidth: 0,
-                    hoverOffset: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '68%',
-                plugins: {
-                    legend: { position: 'right', labels: { boxWidth: 12, usePointStyle: true, padding: 15 } }
-                }
-            }
+            type: 'doughnut', data: { labels: typeLabels, datasets: [{ data: typeData, backgroundColor: typeColors, borderWidth: 0, hoverOffset: 6 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'right', labels: { boxWidth: 12, usePointStyle: true, padding: 15 } } } }
         });
     }
   }
 }
 
-function applyTabFilter(){
-  if (activeTab==='ทั้งหมด') filtered=[...docs];
-  else if (activeTab==='✅ จบงาน') filtered=docs.filter(d=>(d.result||'').includes('จบงาน'));
-  else if (activeTab==='❌ ตัดออก') filtered=docs.filter(d=>{
-      const r=d.result||'', p=d.progress||'';
-      return r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก');
-  });
-  else if (activeTab==='⭐ รีวิว 5 ดาว') {
-    filtered=docs.filter(d=> (d.problem||'').includes('รีวิว 5 ดาว') || (d.action||'').includes('รีวิว 5 ดาว'));
-  }
-  else filtered=docs.filter(d=>(d.type||'').toUpperCase()===activeTab.toUpperCase());
-  applyFilter();
-}
 
 // ฟังก์ชันจัดการเมื่อเลือก Dropdown เรียงลำดับ
 function handleSortChange() {
@@ -830,42 +800,67 @@ function dtLocalVal(s){
 // Row colors + selection
 let rowColors={}, selectedRows=new Set();
 
+// ฟังก์ชันดูรูปภาพสำหรับใบเสนอราคา
+// 🌟 อัปเกรดระบบแกลลอรี่ให้ดูรูปใบเสนอราคาได้หลายรูป เลื่อนซ้าย-ขวาได้
+// 🌟 อัปเกรดระบบแกลลอรี่ให้ดูรูปได้หลายรูป เลื่อนขึ้น-ลงได้
+function openGallery(id) {
+    const d = docs.find(x => x._id === id);
+    if (!d || !d.images || !d.images.cc || d.images.cc.length === 0) return toast('ไม่มีรูปภาพแนบมาครับ');
+
+    const lbx = document.getElementById('lbx');
+    // เปลี่ยนเป็นแนวตั้ง (flex-direction: column) ให้เลื่อนลูกกลิ้งเมาส์หรือปัดจอลงดูได้เลย
+    const imgsHTML = d.images.cc.map(img => `<img src="${(img.data || img).replace(/'/g,"\\'")}" style="max-height:80vh; max-width:90vw; border-radius:12px; box-shadow:0 8px 40px rgba(0,0,0,.5); margin-bottom: 20px;" onclick="event.stopPropagation()">`).join('');
+
+    lbx.innerHTML = `
+        <button class="lbx-close" onclick="document.getElementById('lbx').classList.remove('on')" style="z-index:9999;">✕</button>
+        <div style="display:flex; flex-direction:column; overflow-y:auto; padding:40px 20px 100px; width:100vw; height:100vh; align-items:center;" onclick="document.getElementById('lbx').classList.remove('on')">
+            ${imgsHTML}
+        </div>
+        <div style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); color:white; font-size:1rem; font-weight:bold; pointer-events:none; text-shadow:0 2px 6px rgba(0,0,0,0.9); background:rgba(0,0,0,0.7); padding:8px 20px; border-radius:30px; z-index:9999;">
+            ↕️ เลื่อนขึ้น-ลง เพื่อดูรูปทั้งหมด (${d.images.cc.length} รูป)
+        </div>`;
+    lbx.classList.add('on');
+}
+
+// อัปเดต Lightbox ตัวเดิมให้ใช้โครงสร้างใหม่ด้วยเพื่อความเสถียร
+function openLightbox(src){
+    const lbx = document.getElementById('lbx');
+    lbx.innerHTML = `
+        <button class="lbx-close" onclick="document.getElementById('lbx').classList.remove('on')">✕</button>
+        <div style="display:flex; justify-content:center; align-items:center; width:100vw; height:100vh;" onclick="document.getElementById('lbx').classList.remove('on')">
+            <img id="lbxImg" src="${src}" style="max-height:90vh; max-width:90vw; border-radius:12px; box-shadow:0 8px 40px rgba(0,0,0,.5);" onclick="event.stopPropagation()">
+        </div>`;
+    lbx.classList.add('on');
+}
+
 function renderHead(){
   const isStaff = window._userRole === 'staff';
-  // 🌟 เพิ่มความฉลาด: เช็คว่าแถวที่แสดงอยู่ตอนนี้ ถูกติ๊กครบหรือยัง
   const allChecked = filtered.length > 0 && filtered.every(d => selectedRows.has(d._id));
   
   document.getElementById('thead').innerHTML='<tr>'+
     '<th style="width:32px;padding:.6rem .4rem;">'+ (isStaff ? '' : `<input type="checkbox" id="checkAll" onclick="toggleAll(this)" ${allChecked ? 'checked' : ''} style="accent-color:var(--g-md); cursor:pointer;">`) +'</th>'+
     LBLS.map((l,i)=>`<th onclick="sortBy(${i})">${l}<span class="si">${sc===i?(sa?'▲':'▼'):'⇅'}</span>${isStaff ? '' : '<div class="resizer" onclick="event.stopPropagation()"></div>'}</th>`).join('')+
   '</tr>';
-  
-  if(!isStaff) {
-    setTimeout(initResizers, 50); 
-  }
+  if(!isStaff) setTimeout(initResizers, 50); 
 }
 
 function renderBody(rows){
   const tb=document.getElementById('tbody');
-  if(!rows.length){tb.innerHTML='<tr><td colspan="15" class="no-data">ไม่พบข้อมูล</td></tr>';return;}
-  
+  if(!rows.length){tb.innerHTML=`<tr><td colspan="${KEYS.length+1}" class="no-data">ไม่พบข้อมูล</td></tr>`;return;}
   const isStaff = window._userRole === 'staff';
 
   tb.innerHTML=rows.map(d=>{
     const ts=d.timestamp?.toDate?fmtDate(d.timestamp.toDate()):(d.timestamp||'—');
-    
-    const rTxt = d.result || '';
-    const pTxt = d.progress || '';
+    const rTxt = d.result || '', pTxt = d.progress || '';
     let finalColor = d.rowColor || rowColors[d._id] || '';
     
-    if (rTxt.includes('ตัดออก') || rTxt.includes('ยกเลิก') || pTxt.includes('ไม่สำเร็จ') || pTxt.includes('ยกเลิก')) {
-        finalColor = '#fca5a5';
-    } else if (rTxt.includes('จบงาน') || pTxt.includes('สำเร็จ')) {
-        finalColor = '#bbf7d0';
+    // ไม่คำนวณสีแดง/เขียวให้ใบเสนอราคา
+    if(d.type !== 'Quote') {
+        if (rTxt.includes('ตัดออก') || rTxt.includes('ยกเลิก') || pTxt.includes('ไม่สำเร็จ') || pTxt.includes('ยกเลิก')) finalColor = '#fca5a5';
+        else if (rTxt.includes('จบงาน') || pTxt.includes('สำเร็จ')) finalColor = '#bbf7d0';
     }
 
-    const tColor=d.textColor||'';
-    const fw=d.fontWeight||'normal';
+    const tColor=d.textColor||'', fw=d.fontWeight||'normal';
     if(finalColor)rowColors[d._id]=finalColor;
     
     let styleStr='';
@@ -873,32 +868,51 @@ function renderBody(rows){
     if(tColor) styleStr+=`color:${tColor} !important;`;
     if(fw!=='normal') styleStr+=`font-weight:${fw} !important;`;
     const bg = styleStr ? `style="${styleStr}"` : '';
-    const checked=selectedRows.has(d._id);
     
+    const checked=selectedRows.has(d._id);
     const chkHtml = isStaff ? '' : `<input type="checkbox" ${checked?'checked':''} style="accent-color:var(--g-md);cursor:pointer;" onclick="toggleSelect('${d._id}',event)">`;
     const tdClick = isStaff ? '' : `onclick="toggleSelect('${d._id}',event)"`;
 
-    // โชว์ชื่ออีเมลคนกรอก (ตัด @gmail.com ออกเพื่อให้สั้นอ่านง่าย)
-    let submitter = d.submittedBy || '';
-    let showSubmitter = submitter ? submitter.split('@')[0] : '⚠️ ขาดชื่อ';
+    let trHTML = `<tr ${bg} id="row_${d._id}">`;
+    trHTML += `<td style="width:32px;padding:.4rem;" ${tdClick}>${chkHtml}</td>`;
+    
+    // 🌟 วนลูปสร้างคอลัมน์ให้อัตโนมัติ (และล็อกไม่ให้เปิด Edit ถ้าเป็นใบเสนอราคา)
+    KEYS.forEach(k => {
+       let val = '', wrapCls = '', styleW = '';
+       let onClick = (activeTab === '📄 ขอใบเสนอราคา') ? '' : `onclick="openModal('${d._id}')"`;
 
-    return `<tr ${bg} id="row_${d._id}">
-      <td style="width:32px;padding:.4rem;" ${tdClick}>${chkHtml}</td>
-      <td onclick="openModal('${d._id}')">${esc(ts)}</td>
-      <td onclick="openModal('${d._id}')"><b>${esc(d.name||'')}</b></td>
-      <td onclick="openModal('${d._id}')">${typeTag(d.type||'')}</td>
-      <td onclick="openModal('${d._id}')">${esc(d.phone||'')}</td>
-      <td onclick="openModal('${d._id}')">${esc(d.channel||'')}</td>
-      <td class="w" style="max-width:175px" onclick="openModal('${d._id}')">${esc(d.problem||'')}</td>
-      <td onclick="openModal('${d._id}')">${esc(fmtDateStr(d.dateStart))}</td>
-      <td onclick="openModal('${d._id}')">${esc(fmtDateStr(d.dateEnd))}</td>
-      <td onclick="openModal('${d._id}')">${stTag(d.progress||'',d.result||'')}</td>
-      <td class="w" style="max-width:130px" onclick="openModal('${d._id}')">${esc(d.action||'')}</td>
-      <td onclick="openModal('${d._id}')">${esc(d.result||'')}</td>
-      <td onclick="openModal('${d._id}')">${esc(d.cost||'')}</td>
-      <td style="color:#b45309; font-size:0.68rem; font-weight:700; text-align:center;" onclick="openModal('${d._id}')">👤 ${esc(showSubmitter)}</td>
-      <td class="w" onclick="openModal('${d._id}')">${esc(d.note||'')}</td>
-    </tr>`;
+       if(k === 'timestamp') val = ts;
+       else if(k === 'name') val = `<b>${esc(d.name||'')}</b>`;
+       else if(k === 'type') val = typeTag(d.type||'');
+       else if(k === 'tax') val = `<span style="color:#1d4ed8;font-weight:600;letter-spacing:1px;">${esc(d.tax||'-')}</span>`;
+       else if(k === 'dateStart' || k === 'dateEnd') val = esc(fmtDateStr(d[k]));
+       else if(k === 'progress' || k === 'result') val = stTag(d.progress||'', d.result||'');
+       else if(k === 'submittedBy') {
+          let submitter = d.submittedBy || d.updatedBy || 'ระบบ (เก่า)';
+          val = `<span style="color:#166534; font-size:0.68rem; font-weight:700;">👤 ${esc(submitter.split('@')[0])}</span>`;
+       }
+       else if(k === 'images_btn') {
+          const imgs = d.images?.cc || [];
+          if(imgs.length > 0) {
+             val = `<button onclick="openGallery('${d._id}'); event.stopPropagation();" style="background:#dcfce7; border:1px solid #16a34a; color:#15803d; padding:4px 10px; border-radius:6px; cursor:pointer; font-size:0.75rem; font-weight:bold;">🖼️ ดูรูป (${imgs.length})</button>`;
+          } else {
+             val = `<span style="color:#9ab89a; font-size:0.7rem;">ไม่มีรูป</span>`;
+          }
+          onClick = ''; // ล็อกไม่ให้เด้งแก้ไข
+       }
+       else {
+          val = esc(d[k]||'');
+       }
+       
+       if (k === 'problem') { wrapCls = 'class="w"'; styleW = 'style="max-width:200px;"'; }
+       if (k === 'action')  { wrapCls = 'class="w"'; styleW = 'style="max-width:130px;"'; }
+       if (k === 'note')    { wrapCls = 'class="w"'; styleW = 'style="max-width:180px;"'; }
+       
+       trHTML += `<td ${wrapCls} ${styleW} ${onClick}>${val}</td>`;
+    });
+    
+    trHTML += `</tr>`;
+    return trHTML;
   }).join('');
 }
 
@@ -1305,11 +1319,6 @@ function buildFields(d){
   return h;
 }
 
-function openLightbox(src){
-  document.getElementById('lbxImg').src=src;
-  document.getElementById('lbx').classList.add('on');
-}
-
 // Delete
 async function deleteDoc(){
   if(window._userRole!=='admin'&&window._userRole!=='viewer'){ toast('⛔ ไม่มีสิทธิ์ลบข้อมูล'); return; }
@@ -1347,107 +1356,93 @@ let _tt;
 function toast(m){const e=document.getElementById('toastEl');e.textContent=m;e.classList.add('on');clearTimeout(_tt);_tt=setTimeout(()=>e.classList.remove('on'),3000);}
 
 // ── ฟังก์ชัน Export Excel (อัปเกรดเพิ่มคอลัมน์ผู้บันทึก) ──
-function exportToExcel(statusFilter = 'all') {
-  if (!docs || docs.length === 0) return toast('⚠️ ไม่มีข้อมูลครับ');
-  
-  // 1. กรองตามแท็บ
+// ── ระบบ Export รวมมิตร (ดึงเฉพาะที่ติ๊ก Checkbox ได้ & แก้บั๊ก Syntax) ──
+function getExportDocs(statusFilter) {
   let currentDocs = docs;
   if (activeTab !== 'ทั้งหมด') {
-    if (activeTab === '✅ จบงาน') currentDocs = currentDocs.filter(d => (d.result || '').includes('จบงาน'));
+    if (activeTab === '✅ จบงาน') currentDocs = currentDocs.filter(d => (d.result || '').includes('จบงาน') && d.type !== 'Quote');
     else if (activeTab === '❌ ตัดออก') currentDocs = currentDocs.filter(d => {
         const r=d.result||'', p=d.progress||'';
-        return r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก');
+        return (r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก')) && d.type !== 'Quote';
     });
-    else if (activeTab === '⭐ รีวิว 5 ดาว') currentDocs = currentDocs.filter(d => (d.problem || '').includes('รีวิว 5 ดาว') || (d.action || '').includes('รีวิว 5 ดาว'));
+    else if (activeTab === '⭐ รีวิว 5 ดาว') currentDocs = currentDocs.filter(d => ((d.problem || '').includes('รีวิว 5 ดาว') || (d.action || '').includes('รีวิว 5 ดาว')) && d.type !== 'Quote');
+    else if (activeTab === '📄 ขอใบเสนอราคา') currentDocs = currentDocs.filter(d => d.type === 'Quote');
     else currentDocs = currentDocs.filter(d => (d.type || '').toUpperCase() === activeTab.toUpperCase());
   }
   
-  // 2. กรองตามสถานะ
-  if (statusFilter === 'success') {
-     currentDocs = currentDocs.filter(d => {
-         const r = d.result||'', p = d.progress||'';
-         const isFail = r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก');
-         const isSuccess = r.includes('จบงาน') || p.includes('สำเร็จ');
-         return !isFail && isSuccess;
-     });
-  } else if (statusFilter === 'fail') {
-     currentDocs = currentDocs.filter(d => {
-         const r = d.result||'', p = d.progress||'';
-         return r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก');
-     });
-  } else if (statusFilter === 'pending') {
-     currentDocs = currentDocs.filter(d => {
-         const r = d.result||'', p = d.progress||'';
-         const isFail = r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก');
-         const isSuccess = r.includes('จบงาน') || p.includes('สำเร็จ');
-         return !isFail && !isSuccess;
-     });
+  // 🌟 พลังพิเศษ: ถ้ามีการติ๊ก Checkbox ไว้ ให้ส่งออก "เฉพาะที่ติ๊ก" เท่านั้น!
+  if (selectedRows.size > 0) return currentDocs.filter(d => selectedRows.has(d._id));
+  
+  if (activeTab !== '📄 ขอใบเสนอราคา') {
+      if (statusFilter === 'success') {
+         currentDocs = currentDocs.filter(d => {
+             const r = d.result||'', p = d.progress||'';
+             const isFail = r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก');
+             return !isFail && (r.includes('จบงาน') || p.includes('สำเร็จ'));
+         });
+      } else if (statusFilter === 'fail') {
+         currentDocs = currentDocs.filter(d => {
+             const r = d.result||'', p = d.progress||'';
+             return r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก');
+         });
+      } else if (statusFilter === 'pending') {
+         currentDocs = currentDocs.filter(d => {
+             const r = d.result||'', p = d.progress||'';
+             const isFail = r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก');
+             const isSuccess = r.includes('จบงาน') || p.includes('สำเร็จ');
+             return !isFail && !isSuccess;
+         });
+      }
   }
+  return currentDocs;
+}
 
-  if (currentDocs.length === 0) return toast('⚠️ ไม่มีข้อมูลในสถานะที่เลือกครับ');
+function exportToExcel(statusFilter = 'all') {
+  const currentDocs = getExportDocs(statusFilter);
+  if (currentDocs.length === 0) return toast('⚠️ ไม่มีข้อมูลให้ส่งออกครับ');
 
-  // 3. สร้างไฟล์ CSV
   let csv = '\uFEFF';
-  // 🌟 เพิ่มคอลัมน์ผู้บันทึกลงในหัว Excel
-  csv += "วันที่แจ้ง,ชื่อลูกค้า,เบอร์โทร,ประเภท,รายละเอียดหน้างาน,ความคืบหน้า,ผลลัพธ์,ผู้บันทึก,หมายเหตุ\n";
+  csv += LBLS.join(',') + '\n'; 
+  
   currentDocs.forEach(d => {
-    const dateStr = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleString('th-TH') : '';
-    // 🌟 ดึงชื่อผู้บันทึกเต็มๆ
-    let submitter = d.submittedBy || d.updatedBy || 'ระบบ (ข้อมูลเก่า)';
-    csv += `"${dateStr}","${d.name||''}","${d.phone||''}","${d.type||''}","${(d.problem||'').replace(/"/g,'""')}","${(d.progress||'').replace(/"/g,'""')}","${(d.result||'').replace(/"/g,'""')}","${submitter}","${(d.note||'').replace(/"/g,'""')}"\n`;
+    let rowArr = [];
+    KEYS.forEach(k => {
+      if(k === 'timestamp') {
+         rowArr.push(`"${d.timestamp?.toDate ? d.timestamp.toDate().toLocaleString('th-TH') : ''}"`);
+      } else if (k === 'images_btn') {
+         rowArr.push(`"${(d.images?.cc?.length > 0) ? 'แนบรูปมา' : 'ไม่มีรูป'}"`);
+      } else {
+         let val = (d[k] || '').toString().replace(/"/g, '""');
+         // 🌟 บังคับ Excel ให้อ่านเบอร์โทรกับเลขภาษีเป็น "ข้อความ" เพื่อแก้บั๊ก E+
+         if(k === 'phone' || k === 'tax') rowArr.push(`="${val}"`);
+         else rowArr.push(`"${val}"`);
+      }
+    });
+    csv += rowArr.join(',') + '\n';
   });
   
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  const sName = statusFilter === 'all' ? 'ทั้งหมด' : (statusFilter === 'success' ? 'สำเร็จ' : (statusFilter === 'fail' ? 'ไม่สำเร็จ' : 'รอดำเนินการ'));
+  
+  let sName = (selectedRows.size > 0) ? 'เฉพาะที่เลือก' : (statusFilter === 'all' ? 'ทั้งหมด' : (statusFilter === 'success' ? 'สำเร็จ' : (statusFilter === 'fail' ? 'ไม่สำเร็จ' : 'รอดำเนินการ')));
+  if(activeTab === '📄 ขอใบเสนอราคา') sName = (selectedRows.size > 0) ? 'เฉพาะที่เลือก' : 'ทั้งหมด';
+  
   link.download = `AdvancePlus_Excel_${activeTab}_${sName}.csv`;
-  link.click();
+  document.body.appendChild(link); // 🌟 บังคับแปะลิงก์
+  link.click(); // 🌟 สั่งกด
+  document.body.removeChild(link); // 🌟 ลบทิ้งอย่างแนบเนียน
   toast('✅ ดาวน์โหลด Excel สำเร็จ!');
 }
 
-/// ── Export Image Function (อัปเกรดเพิ่มรายชื่อคนกรอกแบบเต็ม) ──
 function exportStatsAsImage(statusFilter = 'all') {
-  if (!docs || docs.length === 0) return toast('⚠️ ไม่มีข้อมูลให้สร้างสถิติครับ');
-
-  // 1. กรองตามแท็บ
-  let currentDocs = docs;
-  if (activeTab !== 'ทั้งหมด') {
-    if (activeTab === '✅ จบงาน') currentDocs = currentDocs.filter(d => (d.result || '').includes('จบงาน'));
-    else if (activeTab === '❌ ตัดออก') currentDocs = currentDocs.filter(d => {
-        const r=d.result||'', p=d.progress||'';
-        return r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก');
-    });
-    else if (activeTab === '⭐ รีวิว 5 ดาว') currentDocs = currentDocs.filter(d => (d.problem || '').includes('รีวิว 5 ดาว') || (d.action || '').includes('รีวิว 5 ดาว'));
-    else currentDocs = currentDocs.filter(d => (d.type || '').toUpperCase() === activeTab.toUpperCase());
-  }
-
-  // 2. กรองตามสถานะ
-  if (statusFilter === 'success') {
-     currentDocs = currentDocs.filter(d => {
-         const r = d.result||'', p = d.progress||'';
-         const isFail = r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก');
-         const isSuccess = r.includes('จบงาน') || p.includes('สำเร็จ');
-         return !isFail && isSuccess; 
-     });
-  } else if (statusFilter === 'fail') {
-     currentDocs = currentDocs.filter(d => {
-         const r = d.result||'', p = d.progress||'';
-         return r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก');
-     });
-  } else if (statusFilter === 'pending') {
-     currentDocs = currentDocs.filter(d => {
-         const r = d.result||'', p = d.progress||'';
-         const isFail = r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก');
-         const isSuccess = r.includes('จบงาน') || p.includes('สำเร็จ');
-         return !isFail && !isSuccess;
-     });
-  }
-
-  if (currentDocs.length === 0) return toast('⚠️ ไม่มีข้อมูลในสถานะที่เลือกครับ');
+  if (activeTab === '📄 ขอใบเสนอราคา') return toast('⚠️ ข้อมูลใบเสนอราคา ส่งออกเป็น Excel ได้อย่างเดียวครับ');
+  
+  const currentDocs = getExportDocs(statusFilter);
+  if (currentDocs.length === 0) return toast('⚠️ ไม่มีข้อมูลให้สร้างสถิติครับ');
+  
   toast('⏳ กำลังประมวลผลข้อมูล วาดกราฟ และโหลดรายชื่อ...');
 
-  // 3. คำนวณกราฟ
   let success = 0, fail = 0, pending = 0;
   currentDocs.forEach(d => {
     const r = d.result || '', p = d.progress || '';
@@ -1456,27 +1451,19 @@ function exportStatsAsImage(statusFilter = 'all') {
     else pending++;
   });
 
-  const sName = statusFilter === 'all' ? 'รวมทุกสถานะ' : (statusFilter === 'success' ? 'เฉพาะเคสที่สำเร็จแล้ว' : (statusFilter === 'fail' ? 'เฉพาะเคสที่ไม่สำเร็จ' : 'เฉพาะเคสที่รอดำเนินการ'));
+  let sName = (selectedRows.size > 0) ? 'เฉพาะที่เลือก' : (statusFilter === 'all' ? 'รวมทุกสถานะ' : (statusFilter === 'success' ? 'เฉพาะเคสที่สำเร็จแล้ว' : (statusFilter === 'fail' ? 'เฉพาะเคสที่ไม่สำเร็จ' : 'เฉพาะเคสที่รอดำเนินการ')));
+  
   const uniqueId = 'exportChart_' + Date.now();
 
-  // 4. สร้าง HTML ตารางแถว
   const tableRowsHTML = currentDocs.map((d, index) => {
     const ts = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleDateString('th-TH') : '-';
-    const r = d.result || '';
-    const p = d.progress || '';
-    let stColor = '#4b5563';
-    let bgRow = '#ffffff';
-    let stText = r || p || '-';
+    const r = d.result || '', p = d.progress || '';
+    let stColor = '#4b5563', bgRow = '#ffffff', stText = r || p || '-';
 
-    if (r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก')) {
-        stColor = '#b91c1c'; bgRow = '#fef2f2';
-    } else if (r.includes('จบงาน') || p.includes('สำเร็จ')) {
-        stColor = '#15803d'; bgRow = '#f0fdf4';
-    } else {
-        stColor = '#b45309'; bgRow = '#fffbeb';
-    }
+    if (r.includes('ตัดออก') || r.includes('ยกเลิก') || p.includes('ไม่สำเร็จ') || p.includes('ยกเลิก')) { stColor = '#b91c1c'; bgRow = '#fef2f2'; } 
+    else if (r.includes('จบงาน') || p.includes('สำเร็จ')) { stColor = '#15803d'; bgRow = '#f0fdf4'; } 
+    else { stColor = '#b45309'; bgRow = '#fffbeb'; }
 
-    // 🌟 ดึงชื่อมาโชว์เต็มๆ ไม่ตัด @ทิ้ง
     let submitter = d.submittedBy || d.updatedBy || 'ระบบ (ข้อมูลเก่า)';
 
     return `
@@ -1492,12 +1479,11 @@ function exportStatsAsImage(statusFilter = 'all') {
     `;
   }).join('');
 
-  // 5. สร้างกรอบ Canvas (ขยายความกว้างเป็น 1150px เพื่อให้ชื่ออีเมลยาวๆ ไม่เบียด)
   const container = document.createElement('div');
   container.style.position = 'absolute';
   container.style.left = '-9999px';
   container.style.top = '0';
-  container.style.width = '1150px'; // 🌟 ขยายให้กว้างขึ้น
+  container.style.width = '1150px';
   container.style.backgroundColor = '#ffffff';
   container.style.padding = '40px';
   container.style.fontFamily = "'Kanit', sans-serif";
@@ -1579,18 +1565,18 @@ function exportStatsAsImage(statusFilter = 'all') {
       });
   }
 
-  setTimeout(() => {
-    html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: container.scrollWidth, windowHeight: container.scrollHeight }).then(canvas => {
-      const link = document.createElement('a');
-      link.download = `AdvancePlus_Stats_${activeTab.replace(/[/\\?%*:|"<>]/g, '')}_${new Date().getTime()}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-      
-      document.body.removeChild(container);
-      toast('✅ บันทึกรูปภาพพร้อมรายชื่อสำเร็จแล้ว!');
-    });
-  }, 800); 
-}
+    setTimeout(() => {
+      html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: container.scrollWidth, windowHeight: container.scrollHeight }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `AdvancePlus_Stats_${activeTab.replace(/[/\\?%*:|"<>]/g, '')}_${new Date().getTime()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        
+        document.body.removeChild(container);
+        toast('✅ บันทึกรูปภาพพร้อมรายชื่อสำเร็จแล้ว!');
+      });
+    }, 800); 
+  }
 
 // ── ระบบจัดการสีแบบ Excel ──
 const STD_BG = ['#fca5a5','#fcd34d','#fef08a','#bbf7d0','#a7f3d0','#bae6fd','#c7d2fe','#e9d5ff','#fbcfe8','#f3f4f6','#e5e7eb','#d1d5db'];
@@ -1829,54 +1815,169 @@ async function importExcel(event) {
 }
  
  // ── ฟังก์ชันสร้างรายงาน PDF แบบสวยงาม ──
-function exportPDF() {
+// ── ใช้วิธี "พิมพ์" ของเบราว์เซอร์ (window.print) แทน html2canvas เพราะ html2canvas วาดตัวอักษรเอง
+//    ไม่รองรับการจัดตำแหน่งสระ/วรรณยุกต์ไทยแบบ GPOS ทำให้เพี้ยนไม่ว่าจะใช้ฟอนต์อะไรก็ตาม
+//    รอบนี้สร้างเนื้อหาด้วย DOM API (createElement/appendChild) แทน document.write()
+//    เพื่อเลี่ยงการถูก extension บล็อกโฆษณา/ความเป็นส่วนตัวบล็อกการฉีดสคริปต์
+function printToPDF(bodyHTML, docName, orientation = 'portrait') {
+  const printWin = window.open('about:blank', '_blank');
+  if (!printWin) {
+    toast('⚠️ เบราว์เซอร์บล็อกป๊อปอัพ กรุณาอนุญาตป๊อปอัพสำหรับเว็บนี้แล้วลองใหม่');
+    return;
+  }
+  const pdoc = printWin.document;
+
+  pdoc.title = docName;
+
+  const meta = pdoc.createElement('meta');
+  meta.setAttribute('charset', 'UTF-8');
+  pdoc.head.appendChild(meta);
+
+  const style = pdoc.createElement('style');
+  style.textContent = `
+    @page { size: A4 ${orientation}; margin: 10mm; }
+    * { box-sizing: border-box; }
+    body { font-family: Tahoma, 'Leelawadee UI', Arial, sans-serif; margin:0; color:#1a2e1a; }
+    table { width:100%; border-collapse:collapse; }
+  `;
+  pdoc.head.appendChild(style);
+
+  // ใส่เนื้อหาโดยตรงผ่าน DOM แทน document.write (extension บล็อกยากกว่ามาก)
+  pdoc.body.innerHTML = bodyHTML;
+
+  const triggerPrint = () => {
+    printWin.focus();
+    printWin.print();
+  };
+  if (pdoc.fonts && pdoc.fonts.ready) {
+    pdoc.fonts.ready.then(() => setTimeout(triggerPrint, 300));
+  } else {
+    setTimeout(triggerPrint, 700);
+  }
+  toast('✅ เปิดหน้าต่างพิมพ์แล้ว กรุณาเลือกปลายทางเป็น "Save as PDF"');
+}
+
+async function exportPDF(statusFilter = 'all') {
+  await document.fonts.ready;
+  const currentDocs = getExportDocs(statusFilter);
+  if (currentDocs.length === 0) return toast('⚠️ ไม่มีข้อมูลให้สร้างรายงาน PDF ครับ');
+  toast('⏳ กำลังจัดทำไฟล์ PDF...');
+
+  let sName = (selectedRows.size > 0) ? 'เฉพาะที่เลือก' : (statusFilter === 'all' ? 'ทั้งหมด' : (statusFilter === 'success' ? 'สำเร็จ' : (statusFilter === 'fail' ? 'ไม่สำเร็จ' : 'รอดำเนินการ')));
+  if(activeTab.includes('ขอใบเสนอราคา')) sName = (selectedRows.size > 0) ? 'เฉพาะที่เลือก' : 'ทั้งหมด';
+
+  let tableRowsHTML = '';
+  if (activeTab.includes('ขอใบเสนอราคา')) {
+    tableRowsHTML = currentDocs.map((d, i) => `
+      <tr>
+        <td style="padding:8px; border:1px solid #d1e8d1; text-align:center;">${i+1}</td>
+        <td style="padding:8px; border:1px solid #d1e8d1; text-align:center;">${d.timestamp?.toDate ? d.timestamp.toDate().toLocaleDateString('th-TH') : '-'}</td>
+        <td style="padding:8px; border:1px solid #d1e8d1;"><b>${d.name || '-'}</b></td>
+        <td style="padding:8px; border:1px solid #d1e8d1; text-align:center; color:#1d4ed8;">${d.tax || '-'}</td>
+        <td style="padding:8px; border:1px solid #d1e8d1; text-align:center;">${d.phone || '-'}</td>
+        <td style="padding:8px; border:1px solid #d1e8d1;">${d.problem || '-'}</td>
+        <td style="padding:8px; border:1px solid #d1e8d1; color:#166534;">${d.note || '-'}</td>
+      </tr>
+    `).join('');
+  } else {
+    tableRowsHTML = currentDocs.map((d, i) => `
+      <tr>
+        <td style="padding:8px; border:1px solid #d1e8d1; text-align:center;">${i+1}</td>
+        <td style="padding:8px; border:1px solid #d1e8d1; text-align:center;">${d.timestamp?.toDate ? d.timestamp.toDate().toLocaleDateString('th-TH') : '-'}</td>
+        <td style="padding:8px; border:1px solid #d1e8d1;"><b>${d.name || '-'}</b></td>
+        <td style="padding:8px; border:1px solid #d1e8d1; text-align:center;">${d.type || '-'}</td>
+        <td style="padding:8px; border:1px solid #d1e8d1;">${d.problem || '-'}</td>
+        <td style="padding:8px; border:1px solid #d1e8d1; text-align:center;">${d.result || d.progress || '-'}</td>
+      </tr>
+    `).join('');
+  }
+
+  const docTitle = activeTab.includes('ขอใบเสนอราคา') ? 'รายการขอใบเสนอราคา (Quotation Requests)' : 'รายงานสรุปข้อมูลลูกค้า';
+  
+  // 🌟 บังคับใช้ฟอนต์ Kanit หรือ Tahoma แทน เพื่อไม่ให้สระภาษาไทยเพี้ยน
+  // 🌟 เพิ่ม table-layout:fixed และ word-break:break-word ให้ข้อความปัดขึ้นบรรทัดใหม่
+  const content = `
+    <div style="font-family:'Tahoma','Leelawadee UI',Arial,sans-serif; padding:20px; color:#1a2e1a;">
+      <div style="text-align:center; border-bottom:3px solid #16a34a; padding-bottom:10px; margin-bottom:20px;">
+        <h1 style="color:#15803d; margin:0; font-size:24pt; font-family:'Tahoma','Leelawadee UI',Arial,sans-serif;">Advance Plus</h1>
+        <p style="margin:5px 0; font-size:14pt; color:#4b6b4b; font-family:'Tahoma','Leelawadee UI',Arial,sans-serif;">${docTitle}</p>
+        <p style="font-size:11pt; color:#9ab89a; font-family:'Tahoma','Leelawadee UI',Arial,sans-serif;">หมวดหมู่: ${activeTab} | ตัวกรอง: ${sName}</p>
+      </div>
+      <table style="width:100%; border-collapse:collapse; font-size:10pt; table-layout:fixed; overflow-wrap:break-word; word-break:normal;">
+        <thead>
+          <tr style="background:#166534; color:#fff;">
+            <th style="padding:10px; border:1px solid #d1e8d1; width:5%;">ลำดับ</th>
+            <th style="padding:10px; border:1px solid #d1e8d1; width:10%;">วันที่</th>
+            <th style="padding:10px; border:1px solid #d1e8d1; width:18%;">ชื่อลูกค้า</th>
+            ${activeTab.includes('ขอใบเสนอราคา') ? `
+              <th style="padding:10px; border:1px solid #d1e8d1; width:15%;">เลขผู้เสียภาษี</th>
+              <th style="padding:10px; border:1px solid #d1e8d1; width:12%;">เบอร์โทร</th>
+              <th style="padding:10px; border:1px solid #d1e8d1; width:22%;">ระบบที่สนใจ</th>
+              <th style="padding:10px; border:1px solid #d1e8d1; width:18%;">เพิ่มเติม</th>
+            ` : `
+              <th style="padding:10px; border:1px solid #d1e8d1; width:10%;">ประเภท</th>
+              <th style="padding:10px; border:1px solid #d1e8d1; width:37%;">ปัญหา / รายละเอียดงาน</th>
+              <th style="padding:10px; border:1px solid #d1e8d1; width:20%;">สถานะ</th>
+            `}
+          </tr>
+        </thead>
+        <tbody>${tableRowsHTML}</tbody>
+      </table>
+      <div style="margin-top:30px; text-align:right; font-size:9pt; color:#9ab89a;">
+        พิมพ์โดย: ${auth.currentUser?.email || 'System'} | เมื่อ: ${new Date().toLocaleString('th-TH')}
+      </div>
+    </div>
+  `;
+
+  printToPDF(content, `AdvancePlus_${activeTab}_${sName}`, 'landscape');
+}
+
+// ── ฟังก์ชันสร้างรายงาน PDF ประจำวัน (Dashboard) ──
+// ── ฟังก์ชันสร้างรายงาน PDF ประจำวัน (Dashboard) ──
+async function exportDailyPDF() {
+  await document.fonts.ready;
   const todayStr = new Date().toLocaleDateString('th-TH');
+  
+  // 🌟 ดึงข้อมูลเฉพาะของวันนี้ (ไม่รวมใบเสนอราคา)
   const todayDocs = docs.filter(d => {
-    if (!d.timestamp) return false;
+    if (!d.timestamp || d.type === 'Quote') return false; 
     const date = d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp);
     return date.toLocaleDateString('th-TH') === todayStr;
   });
 
-  if (todayDocs.length === 0) {
-    toast('⚠️ วันนี้ยังไม่มีข้อมูลงาน ไม่สามารถสร้างรายงานได้ครับ');
-    return;
-  }
+  if (todayDocs.length === 0) return toast('⚠️ วันนี้ยังไม่มีข้อมูลงาน ไม่สามารถสร้างรายงานได้ครับ');
+  toast('⏳ กำลังจัดทำไฟล์ PDF รายงานประจำวัน...');
 
-  toast('⏳ กำลังจัดทำไฟล์ PDF...');
-
-  // สรุปยอดแยกประเภท
+  // สรุปข้อมูลประเภทงาน
   const types = {};
   todayDocs.forEach(d => { types[d.type] = (types[d.type] || 0) + 1; });
   const typeSummary = Object.entries(types).map(([t, c]) => `${t}: ${c} เคส`).join(' | ');
 
-  // สร้างเนื้อหา HTML สำหรับ PDF (แบบสวยๆ)
   const content = `
-    <div style="font-family:'Sarabun',sans-serif; padding:20px; color:#1a2e1a;">
+    <div style="font-family:'Tahoma','Leelawadee UI',Arial,sans-serif; padding:20px; color:#1a2e1a;">
       <div style="text-align:center; border-bottom:3px solid #16a34a; padding-bottom:10px; margin-bottom:20px;">
-        <h1 style="color:#15803d; margin:0; font-size:24pt;">Advance Plus</h1>
-        <p style="margin:5px 0; font-size:14pt; color:#4b6b4b;">รายงานสรุปผลการดำเนินงานประจำวัน</p>
-        <p style="font-size:11pt; color:#9ab89a;">วันที่: ${todayStr}</p>
+        <h1 style="color:#15803d; margin:0; font-size:24pt; font-family:'Tahoma','Leelawadee UI',Arial,sans-serif;">Advance Plus</h1>
+        <p style="margin:5px 0; font-size:14pt; color:#4b6b4b; font-family:'Tahoma','Leelawadee UI',Arial,sans-serif;">รายงานสรุปผลการดำเนินงานประจำวัน</p>
+        <p style="font-size:11pt; color:#9ab89a; font-family:'Tahoma','Leelawadee UI',Arial,sans-serif;">วันที่: ${todayStr}</p>
       </div>
-
       <div style="display:flex; gap:10px; margin-bottom:20px;">
         <div style="flex:1; background:#f0fdf4; border:1px solid #d1e8d1; border-radius:10px; padding:15px; text-align:center;">
-          <div style="font-size:10pt; color:#4b6b4b;">ยอดรับงานวันนี้</div>
-          <div style="font-size:24pt; font-weight:bold; color:#16a34a;">${todayDocs.length}</div>
+          <div style="font-size:10pt; color:#4b6b4b; font-family:'Tahoma','Leelawadee UI',Arial,sans-serif;">ยอดรับงานวันนี้</div>
+          <div style="font-size:24pt; font-weight:bold; color:#16a34a; font-family:'Tahoma','Leelawadee UI',Arial,sans-serif;">${todayDocs.length}</div>
         </div>
         <div style="flex:2; background:#f8fbf8; border:1px solid #d1e8d1; border-radius:10px; padding:15px;">
-          <div style="font-size:10pt; color:#4b6b4b; margin-bottom:5px;">สัดส่วนประเภทงาน</div>
-          <div style="font-size:11pt; font-weight:bold; color:#15803d;">${typeSummary}</div>
+          <div style="font-size:10pt; color:#4b6b4b; margin-bottom:5px; font-family:'Tahoma','Leelawadee UI',Arial,sans-serif;">สัดส่วนประเภทงาน</div>
+          <div style="font-size:11pt; font-weight:bold; color:#15803d; font-family:'Tahoma','Leelawadee UI',Arial,sans-serif;">${typeSummary}</div>
         </div>
       </div>
-
-      <table style="width:100%; border-collapse:collapse; font-size:10pt;">
+      <table style="width:100%; border-collapse:collapse; font-size:10pt; table-layout:fixed; overflow-wrap:break-word; word-break:normal;">
         <thead>
           <tr style="background:#166534; color:#fff;">
-            <th style="padding:10px; border:1px solid #d1e8d1;">เวลา</th>
-            <th style="padding:10px; border:1px solid #d1e8d1;">ลูกค้า</th>
-            <th style="padding:10px; border:1px solid #d1e8d1;">ประเภท</th>
-            <th style="padding:10px; border:1px solid #d1e8d1;">ปัญหา / รายละเอียดงาน</th>
-            <th style="padding:10px; border:1px solid #d1e8d1;">สถานะ</th>
+            <th style="padding:10px; border:1px solid #d1e8d1; width:10%;">เวลา</th>
+            <th style="padding:10px; border:1px solid #d1e8d1; width:20%;">ลูกค้า</th>
+            <th style="padding:10px; border:1px solid #d1e8d1; width:10%;">ประเภท</th>
+            <th style="padding:10px; border:1px solid #d1e8d1; width:45%;">ปัญหา / รายละเอียดงาน</th>
+            <th style="padding:10px; border:1px solid #d1e8d1; width:15%;">สถานะ</th>
           </tr>
         </thead>
         <tbody>
@@ -1891,25 +1992,13 @@ function exportPDF() {
           `).join('')}
         </tbody>
       </table>
-
-      <div style="margin-top:30px; text-align:right; font-size:9pt; color:#9ab89a;">
+      <div style="margin-top:30px; text-align:right; font-size:9pt; color:#9ab89a; font-family:'Tahoma','Leelawadee UI',Arial,sans-serif;">
         พิมพ์โดย: ${auth.currentUser?.email || 'System'} | เมื่อ: ${new Date().toLocaleString('th-TH')}
       </div>
     </div>
   `;
 
-  // สั่งแปลงเป็น PDF
-  const opt = {
-    margin: 10,
-    filename: `Report_${todayStr.replace(/\//g,'-')}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  };
-
-  html2pdf().set(opt).from(content).save().then(() => {
-    toast('✅ ดาวน์โหลด PDF เรียบร้อยแล้ว');
-  });
+  printToPDF(content, `DailyReport_${todayStr.replace(/\//g,'-')}`, 'portrait');
 }
 
 
